@@ -80,7 +80,7 @@ export function SidebarContent({
         goToSection(id);
         onNavigate?.();
       }}
-      className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-white/75 transition-colors hover:bg-white/10 hover:text-white"
+      className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-ink transition-colors hover:bg-forest-100 hover:text-forest-800"
     >
       {icon}
       {label}
@@ -96,7 +96,7 @@ export function SidebarContent({
       </div>
 
       <nav className="px-3">
-        <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-white/50">
+        <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-secondary-text">
           Workspace
         </p>
         {navButton("today", "Today", <Sun className="size-4" />)}
@@ -104,7 +104,7 @@ export function SidebarContent({
         <Link
           to="/coach"
           onClick={onNavigate}
-          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-white/75 transition-colors hover:bg-white/10 hover:text-white"
+          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-ink transition-colors hover:bg-forest-100 hover:text-forest-800"
         >
           <MessageCircle className="size-4" />
           AI coach
@@ -112,7 +112,7 @@ export function SidebarContent({
         <Link
           to="/media"
           onClick={onNavigate}
-          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-white/75 transition-colors hover:bg-white/10 hover:text-white"
+          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-ink transition-colors hover:bg-forest-100 hover:text-forest-800"
         >
           <Images className="size-4" />
           Media library
@@ -120,7 +120,7 @@ export function SidebarContent({
         <Link
           to="/billing"
           onClick={onNavigate}
-          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-white/75 transition-colors hover:bg-white/10 hover:text-white"
+          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-ink transition-colors hover:bg-forest-100 hover:text-forest-800"
         >
           <CreditCard className="size-4" />
           Billing
@@ -128,7 +128,7 @@ export function SidebarContent({
         <Link
           to="/feedback"
           onClick={onNavigate}
-          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-white/75 transition-colors hover:bg-white/10 hover:text-white"
+          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-ink transition-colors hover:bg-forest-100 hover:text-forest-800"
         >
           <Heart className="size-4" />
           Give feedback
@@ -137,7 +137,7 @@ export function SidebarContent({
           <Link
             to="/admin"
             onClick={onNavigate}
-            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-white/75 transition-colors hover:bg-white/10 hover:text-white"
+            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-ink transition-colors hover:bg-forest-100 hover:text-forest-800"
           >
             <Inbox className="size-4" />
             Feedback inbox
