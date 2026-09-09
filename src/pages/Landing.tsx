@@ -21,7 +21,6 @@ import {
   Fingerprint,
   Lightbulb,
   MoreHorizontal,
-  Radar,
   Scissors,
   Sparkles,
   Store,
@@ -70,7 +69,6 @@ const STEPS = [
 const FEATURES = [
   { icon: CalendarCheck2, title: "AI 30-day plans", body: "Generate an entire month of personalized content." },
   { icon: TrendingUp, title: "Trend & opportunity insights", body: "Identify relevant trends and opportunities for your industry." },
-  { icon: Radar, title: "Competitor insights", body: "Understand what competitors are doing and spot gaps and opportunities." },
   { icon: Captions, title: "Captions & hashtags", body: "Ready-to-use captions and relevant hashtags." },
   { icon: Clapperboard, title: "Reel ideas & scripts", body: "Practical Reel concepts, hooks and scripts you can actually film." },
   { icon: Fingerprint, title: "Personalized to your brand", body: "Content adapted to your business, audience, goals and tone." },
