@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/convex/_generated/api";
 import { BUSINESS_TYPES, GOALS } from "@/convex/lib/strategy";
 import { cn } from "@/lib/utils";
+import { usePageMeta } from "@/hooks/use-page-meta";
 import { useAction, useQuery } from "convex/react";
 import { AlertTriangle, ArrowLeft, ArrowRight, Check, Loader2, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -173,6 +174,7 @@ function Summary({ label, value }: { label: string; value: React.ReactNode }) {
 // ---------------------------------------------------------------------------
 
 export default function Onboarding() {
+  usePageMeta("Create Your Marketing Plan | Cloudy", "Answer a few questions about your business and get a personalized 30-day marketing plan with content ideas, captions, and posting times.");
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const editing = params.get("edit") === "1";

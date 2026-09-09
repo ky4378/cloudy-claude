@@ -24,7 +24,7 @@ const VALUES = [
 ];
 
 export default function About() {
-  usePageMeta("About Cloudy", "Why we built Cloudy — AI marketing plans for local businesses.");
+  usePageMeta("About Cloudy | AI Marketing Solution for Local Business", "Discover how Cloudy helps local businesses create consistent marketing plans with AI-powered content ideas, captions, and posting strategies.");
   return (
     <div className="relative min-h-screen text-ink">
       <GlassBackdrop grid={false} />

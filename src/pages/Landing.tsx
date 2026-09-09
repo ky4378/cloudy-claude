@@ -408,8 +408,8 @@ export default function Landing() {
   const { isAuthenticated } = useAuth();
   const location = useLocation();
   usePageMeta(
-    "Cloudy — Your entire month of marketing, planned by AI",
-    "Cloudy creates a complete 30-day marketing plan for your local business — what to post, what to film, captions, hashtags, Reel ideas, scripts and posting times.",
+    "Marketing Plans for Local Businesses | Cloudy",
+    "Generate 30-day marketing plans with AI. Know what to post, captions, hashtags, Reel ideas & scripts. Perfect for cafes, salons, fitness studios & more.",
   );
 
   // Arriving at /#section from another page → scroll once mounted.

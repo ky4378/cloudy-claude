@@ -2,7 +2,8 @@ import { useLayoutEffect } from "react";
 
 const ROBOTS_TXT = `User-agent: *
 Allow: /
-Sitemap: https://cloudyco.cloud/sitemap.xml`;
+Disallow: /admin
+Sitemap: https://www.cloudyco.cloud/sitemap.xml`;
 
 /**
  * Serves /robots.txt. The `public/` folder is locked on this platform so
