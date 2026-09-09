@@ -1,0 +1,17 @@
+{
+  "name": "Cloudy AI",
+  "short_name": "Cloudy",
+  "description": "Cloudy AI — your AI marketing strategist.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
