@@ -91,7 +91,7 @@ export function SidebarContent({
     <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
       <div className="px-5 pt-6 pb-4">
         <Link to="/" onClick={onNavigate}>
-          <PilotLogo light />
+          <PilotLogo />
         </Link>
       </div>
 
