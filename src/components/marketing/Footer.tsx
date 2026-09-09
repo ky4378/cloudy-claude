@@ -1,5 +1,4 @@
 import { PilotLogo } from "@/components/pilot/BrandMark";
-import { Instagram } from "lucide-react";
 import { Link } from "react-router";
 import { AnchorLink } from "./Nav";
 
@@ -42,15 +41,6 @@ export function Footer() {
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-secondary-text">
               AI-powered marketing plans for local businesses.
             </p>
-            <a
-              href="https://instagram.com/"
-              target="_blank"
-              rel="noreferrer"
-              aria-label="Cloudy on Instagram"
-              className="glass-chip mt-6 inline-flex size-10 items-center justify-center text-ink transition-colors hover:border-forest-300 hover:text-forest-600"
-            >
-              <Instagram className="size-4" />
-            </a>
           </div>
           {COLUMNS.map((col) => (
             <div key={col.title}>

@@ -1,8 +1,6 @@
 import { LegalLayout } from "@/components/pilot/LegalLayout";
 
-// TODO: replace with the real Cloudy contact email / website once confirmed.
-const CONTACT_EMAIL = "{{Cloudy Contact Email}}";
-const WEBSITE = "https://cloudy.freebuff.app";
+const CONTACT_EMAIL = "cloudyco.support@gmail.com";
 
 type Block = { title?: string; body?: string; items?: string[] };
 type Section = { id?: string; title: string; blocks: Block[] };
@@ -241,7 +239,7 @@ const SECTIONS: Section[] = [
     title: "21. Contact",
     blocks: [
       {
-        body: `If you have questions about these Terms, contact: Email: ${CONTACT_EMAIL} — Website: ${WEBSITE}`,
+        body: `If you have questions about these Terms, contact: Email: ${CONTACT_EMAIL}`,
       },
     ],
   },
