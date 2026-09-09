@@ -327,6 +327,13 @@ export const canUseFeature = internalQuery({
         reason: `You've used ${usage.plans}/${limits.plans} 30-day plans this month. Upgrade your plan to generate more.`,
       };
     }
+    if (feature === "coachMessages" && usage.coachMessages >= limits.coachMessages) {
+      return {
+        ok: false as const,
+        code: "limit" as const,
+        reason: `You've used ${usage.coachMessages}/${limits.coachMessages} AI coach messages this month. Upgrade your plan for more.`,
+      };
+    }
     const cost = CREDIT_COSTS[feature as UsageFeature] * n;
     if (usage.credits + cost > limits.credits) {
       return {

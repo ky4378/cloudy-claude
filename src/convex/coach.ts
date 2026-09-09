@@ -440,18 +440,16 @@ export const getCoachUsage = query({
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .first();
     if (!sub) return { plan: "none" as const, used: 0, total: 0, remaining: 0 };
-    // Coach messages draw from the shared AI-credit pool (1 credit each).
     const limits = getLimitsFor(sub.plan);
     const periodStart = sub.currentPeriodStart ?? sub.createdAt;
     const usage = sub.usage as { periodStart?: number; credits?: number; coachMessages?: number } | undefined;
     const live = usage && (usage.periodStart ?? 0) >= periodStart;
     const used = live ? (usage?.coachMessages ?? 0) : 0;
-    const creditsUsed = live ? (usage?.credits ?? 0) : 0;
     return {
       plan: sub.plan,
       used,
-      total: limits.credits,
-      remaining: Math.max(0, limits.credits - creditsUsed),
+      total: limits.coachMessages,
+      remaining: Math.max(0, limits.coachMessages - used),
     };
   },
 });

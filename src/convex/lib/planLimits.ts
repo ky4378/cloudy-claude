@@ -27,6 +27,8 @@ export interface PlanLimits {
   marketingStrategy: Depth;
   priorityProcessing: boolean;
   earlyAccess: boolean;
+  /** AI coach messages per month. */
+  coachMessages: number;
 }
 
 export interface PlanMeta {
@@ -73,6 +75,7 @@ export const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
     marketingStrategy: "basic",
     priorityProcessing: false,
     earlyAccess: false,
+    coachMessages: 10,
   },
   growth: {
     credits: 300,
@@ -84,6 +87,7 @@ export const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
     marketingStrategy: "advanced",
     priorityProcessing: true,
     earlyAccess: false,
+    coachMessages: 20,
   },
   pro: {
     credits: 750,
@@ -95,6 +99,7 @@ export const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
     marketingStrategy: "full",
     priorityProcessing: true,
     earlyAccess: true,
+    coachMessages: 40,
   },
 };
 
@@ -167,6 +172,10 @@ export const PRICING_ROWS: PricingRow[] = [
     label: "30-day marketing plans",
     values: { starter: "1 / month", growth: "3 / month", pro: "5 / month" },
   },
+  {
+    label: "AI coach messages",
+    values: { starter: "10 / month", growth: "20 / month", pro: "40 / month" },
+  },
   { label: "Instagram content planning", values: { starter: true, growth: true, pro: true } },
   { label: "AI captions", values: { starter: true, growth: true, pro: true } },
   { label: "AI hashtags", values: { starter: true, growth: true, pro: true } },
@@ -189,6 +198,7 @@ export const PLAN_HIGHLIGHTS: Record<PlanId, string[]> = {
   starter: [
     "100 AI credits / month",
     "1 full 30-day marketing plan",
+    "10 AI coach messages / month",
     "AI captions, hashtags & Reel ideas",
     "Basic Reel scripts & trend insights",
     "Regenerate individual posts",
@@ -196,6 +206,7 @@ export const PLAN_HIGHLIGHTS: Record<PlanId, string[]> = {
   growth: [
     "300 AI credits / month",
     "3 full 30-day marketing plans",
+    "20 AI coach messages / month",
     "Advanced Reel scripts & trend insights",
     "Performance insights",
     "Regenerate entire days",
@@ -204,6 +215,7 @@ export const PLAN_HIGHLIGHTS: Record<PlanId, string[]> = {
   pro: [
     "750 AI credits / month",
     "5 full 30-day marketing plans",
+    "40 AI coach messages / month",
     "Full marketing strategy",
     "Regenerate entire weeks",
     "Priority AI processing",
