@@ -6,7 +6,20 @@
       "Bash(git commit -m ' *)",
       "Bash(git push *)",
       "Bash(gh pr *)",
-      "Bash(grep -E \"\\\\.tsx$\")"
+      "Bash(grep -E \"\\\\.tsx$\")",
+      "Bash(curl -s https://www.cloudyco.cloud/sitemap.xml)",
+      "Bash(curl -I https://www.cloudyco.cloud/sitemap.xml)",
+      "Bash(curl -s https://www.cloudyco.cloud/robots.txt)",
+      "Bash(curl -v https://www.cloudyco.cloud/sitemap.xml)",
+      "Bash(curl -s -D - https://www.cloudyco.cloud/sitemap.xml)",
+      "Bash(curl -I https://cloudyco.cloud/sitemap.xml)",
+      "Bash(timeout 5 curl -v https://cloudyco.cloud/sitemap.xml)",
+      "Bash(curl -m 5 -I https://cloudyco.cloud/sitemap.xml)",
+      "Bash(nslookup cloudyco.cloud 8.8.8.8)",
+      "Bash(git restore *)",
+      "Bash(grep -E \"\\\\.\\(tsx|ts\\)$\")",
+      "Bash(grep -r \"\\\\$19\\\\|\\\\$28\\\\|\\\\$55\" /Users/kylaho/Downloads/cloudy-vscode/src --include=\"*.tsx\" --include=\"*.ts\")",
+      "Bash(grep -n \"price\\\\|month\\\\|/\\\\$\" /Users/kylaho/Downloads/cloudy-vscode/src/pages/Billing.tsx)"
     ]
   }
 }
