@@ -4,11 +4,9 @@ import { v } from "convex/values";
 
 // Feedback cadence:
 // 1. First check-in: 48 hours after the business is created.
-// 2. Second check-in: 2 weeks after the first submission.
-// 3. Every subsequent check-in: once a month after the last submission.
+// 2. Every subsequent check-in: every 7 days after the last submission.
 const FIRST_ASK_DELAY_MS = 48 * 60 * 60 * 1000;          // 48 hours
-const SECOND_ASK_INTERVAL_MS = 14 * 24 * 60 * 60 * 1000;  // 2 weeks after first submission
-const MONTHLY_INTERVAL_MS = 30 * 24 * 60 * 60 * 1000;      // 30 days (monthly)
+const RECURRING_ASK_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days recurring
 
 /**
  * Whether the current user's business is due for a feedback check-in.
@@ -35,12 +33,9 @@ export const feedbackStatus = query({
     if (last === null) {
       // No feedback submitted yet → first ask after 48 hours.
       due = Date.now() - business.createdAt >= FIRST_ASK_DELAY_MS;
-    } else if (submissions.length === 1) {
-      // After the first submission → second ask after 2 weeks.
-      due = Date.now() - last.createdAt >= SECOND_ASK_INTERVAL_MS;
     } else {
-      // After the second+ submission → monthly.
-      due = Date.now() - last.createdAt >= MONTHLY_INTERVAL_MS;
+      // After first submission → ask again every 7 days.
+      due = Date.now() - last.createdAt >= RECURRING_ASK_INTERVAL_MS;
     }
     return {
       due,
