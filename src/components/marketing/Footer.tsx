@@ -67,7 +67,6 @@ export function Footer() {
         </div>
         <div className="mt-14 flex flex-col gap-3 border-t border-hairline pt-6 text-xs text-secondary-text sm:flex-row sm:items-center sm:justify-between">
           <p>© {new Date().getFullYear()} Cloudy. All rights reserved.</p>
-          <p>Made for the businesses that make neighbourhoods worth living in.</p>
         </div>
       </div>
     </footer>
