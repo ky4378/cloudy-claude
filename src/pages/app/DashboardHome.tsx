@@ -3,9 +3,10 @@ import { StatusBadge } from "@/components/app/StatusBadge";
 import { Card, EmptyState, PageHeader } from "@/components/app/PageHeader";
 import { errorMessage, shortDate, useAppData, type Post } from "@/components/app/useAppData";
 import { Button } from "@/components/ui/button";
+import { FeedbackDialog } from "@/components/pilot/FeedbackDialog";
 import { api } from "@/convex/_generated/api";
 import { BUSINESS_TYPES, CONTENT_TYPE_META, todayString } from "@/convex/lib/strategy";
-import { useAction, useMutation } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import {
   ArrowRight,
   BarChart3,
@@ -35,6 +36,8 @@ export default function DashboardHome() {
   const { business, posts, usage } = useAppData();
   const [params, setParams] = useSearchParams();
   const [selected, setSelected] = useState<Post | null>(null);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const feedbackStatus = useQuery(api.feedback.feedbackStatus);
   const updateStatus = useMutation(api.businesses.updatePostStatus);
   const analyzeTrends = useAction(api.ai.analyzeTrends);
   const [trendBusy, setTrendBusy] = useState(false);
@@ -273,6 +276,15 @@ export default function DashboardHome() {
       </div>
 
       <PostDetailSheet post={selected} open={selected !== null} onOpenChange={(o) => !o && setSelected(null)} />
+
+      {feedbackStatus && (
+        <FeedbackDialog
+          due={feedbackStatus.due}
+          businessName={business.businessName}
+          open={feedbackOpen}
+          onOpenChange={setFeedbackOpen}
+        />
+      )}
     </>
   );
 }
