@@ -312,6 +312,9 @@ function Auth({ redirectAfterAuth, initialMode }: AuthProps = {}) {
         setIsLoading(false);
         return;
       }
+      // Login successful — clear form so navigation effect triggers.
+      setEmail("");
+      setPassword("");
       setIsLoading(false);
     } catch (error) {
       console.error("Login error:", error);
