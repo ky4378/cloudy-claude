@@ -126,6 +126,47 @@ export const getPostsByBusiness = internalQuery({
   },
 });
 
+/** Get content ideas to exclude from generation (used by same business type, non-trending). */
+export const getExcludedContentIdeas = internalQuery({
+  args: { businessId: v.id("businesses") },
+  handler: async (ctx, { businessId }) => {
+    const business = await ctx.db.get(businessId);
+    if (!business) return [];
+
+    const otherBusinesses = await ctx.db
+      .query("businesses")
+      .collect();
+
+    const sameTypeBusinesses = otherBusinesses.filter(
+      (b) => b.businessType === business.businessType && b._id !== businessId
+    );
+
+    if (sameTypeBusinesses.length === 0) return [];
+
+    const allPosts = await ctx.db
+      .query("posts")
+      .collect();
+
+    const trendingTitles = new Set(
+      business.trendReport?.trends.map((t) => t.title.toLowerCase()) ?? []
+    );
+
+    const excluded: string[] = [];
+    for (const otherBusiness of sameTypeBusinesses) {
+      const theirPosts = allPosts.filter((p) => p.businessId === otherBusiness._id);
+      for (const post of theirPosts) {
+        const isT = trendingTitles.has(post.title.toLowerCase());
+        if (!isT) {
+          excluded.push(post.title);
+          excluded.push(post.subject);
+        }
+      }
+    }
+
+    return [...new Set(excluded)];
+  },
+});
+
 export const upsertBusiness = internalMutation({
   args: {
     userId: v.id("users"),

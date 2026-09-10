@@ -164,7 +164,10 @@ async function runPlanPipeline(
     await ctx.runMutation(internal.businesses.patchStrategy, { businessId, strategy });
 
     // 3. The 30-day content plan (use fast deterministic engine for instant results).
-    const opts = { startDate: anchor, salt, strategyNote: strategyNote(strategy) };
+    const excludedIdeas = await ctx.runQuery(internal.businesses.getExcludedContentIdeas, {
+      businessId,
+    });
+    const opts = { startDate: anchor, salt, strategyNote: strategyNote(strategy), excludedIdeas };
     const plans = buildCalendarFallback(profile, opts);
 
     await ctx.runMutation(internal.businesses.replacePosts, { businessId, plans });
@@ -263,10 +266,14 @@ export const regeneratePost = action({
     const anchor = business.planStartDate ?? formatDate(new Date());
     const salt = Math.floor(Date.now() / 60000) + post.dayIndex;
     const profile = toProfile(business);
+    const excludedIdeas = await ctx.runQuery(internal.businesses.getExcludedContentIdeas, {
+      businessId: business._id,
+    });
     const opts = {
       startDate: anchor,
       salt,
       strategyNote: business.strategy ? strategyNote(business.strategy) : undefined,
+      excludedIdeas,
     };
 
     const aiPlans = await generateRangeWithAI(profile, post.dayIndex, 1, opts);
@@ -314,10 +321,14 @@ export const regenerateDays = action({
     const anchor = business.planStartDate ?? formatDate(new Date());
     const salt = Math.floor(Date.now() / 60000) + fromDayIndex;
     const profile = toProfile(business);
+    const excludedIdeas = await ctx.runQuery(internal.businesses.getExcludedContentIdeas, {
+      businessId,
+    });
     const opts = {
       startDate: anchor,
       salt,
       strategyNote: business.strategy ? strategyNote(business.strategy) : undefined,
+      excludedIdeas,
     };
 
     const aiPlans = await generateRangeWithAI(profile, fromDayIndex, n, opts);

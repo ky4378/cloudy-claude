@@ -149,52 +149,17 @@ createRoot(document.getElementById("root")!).render(
                 <Route path="content" element={<ContentPage />} />
                 <Route path="insights" element={<InsightsPage />} />
                 <Route path="settings" element={<SettingsPage />} />
+                <Route path="coach" element={<Coach />} />
+                <Route path="feedback" element={<FeedbackPage />} />
+                <Route path="admin" element={<AdminPage />} />
+                <Route path="media" element={<MediaPage />} />
+                <Route path="billing" element={<BillingPage />} />
               </Route>
               <Route
                 path="/ig/callback"
                 element={
                   <RequireAuth>
                     <InstagramCallback />
-                  </RequireAuth>
-                }
-              />
-              <Route
-                path="/coach"
-                element={
-                  <RequireAuth>
-                    <Coach />
-                  </RequireAuth>
-                }
-              />
-              <Route
-                path="/feedback"
-                element={
-                  <RequireAuth>
-                    <FeedbackPage />
-                  </RequireAuth>
-                }
-              />
-              <Route
-                path="/admin"
-                element={
-                  <RequireAuth>
-                    <AdminPage />
-                  </RequireAuth>
-                }
-              />
-              <Route
-                path="/media"
-                element={
-                  <RequireAuth>
-                    <MediaPage />
-                  </RequireAuth>
-                }
-              />
-              <Route
-                path="/billing"
-                element={
-                  <RequireAuth>
-                    <BillingPage />
                   </RequireAuth>
                 }
               />

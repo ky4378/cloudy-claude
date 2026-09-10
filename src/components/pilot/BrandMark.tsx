@@ -1,5 +1,38 @@
-import { Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+function CloudSVG({
+  size = "md",
+}: {
+  size?: "sm" | "md" | "lg";
+}) {
+  const sizeMap = {
+    sm: 28,
+    md: 36,
+    lg: 44,
+  };
+  const s = sizeMap[size];
+
+  return (
+    <svg
+      viewBox="0 0 100 100"
+      width={s}
+      height={s}
+      className="shrink-0"
+    >
+      <defs>
+        <linearGradient id="cloudGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#e8f1f9" />
+          <stop offset="100%" stopColor="#d0e5f5" />
+        </linearGradient>
+      </defs>
+      <circle cx="35" cy="60" r="20" fill="url(#cloudGradient)" stroke="#8ca8c0" strokeWidth="1.5" />
+      <circle cx="50" cy="48" r="23" fill="url(#cloudGradient)" stroke="#8ca8c0" strokeWidth="1.5" />
+      <circle cx="65" cy="58" r="20" fill="url(#cloudGradient)" stroke="#8ca8c0" strokeWidth="1.5" />
+      <circle cx="42" cy="72" r="18" fill="url(#cloudGradient)" stroke="#8ca8c0" strokeWidth="1.5" />
+      <circle cx="58" cy="74" r="16" fill="url(#cloudGradient)" stroke="#8ca8c0" strokeWidth="1.5" />
+    </svg>
+  );
+}
 
 export function BrandMark({
   size = "md",
@@ -11,19 +44,11 @@ export function BrandMark({
   return (
     <div
       className={cn(
-        "relative flex shrink-0 items-center justify-center rounded-xl bg-ink text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.14)]",
-        size === "sm" && "h-7 w-7 rounded-lg",
-        size === "md" && "h-9 w-9",
-        size === "lg" && "h-11 w-11",
+        "relative flex shrink-0 items-center justify-center",
         className,
       )}
     >
-      <Sparkles
-        className={cn(
-          size === "sm" ? "h-4 w-4" : size === "md" ? "h-5 w-5" : "h-6 w-6",
-        )}
-        strokeWidth={2.2}
-      />
+      <CloudSVG size={size} />
     </div>
   );
 }

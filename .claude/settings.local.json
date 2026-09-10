@@ -19,7 +19,14 @@
       "Bash(git restore *)",
       "Bash(grep -E \"\\\\.\\(tsx|ts\\)$\")",
       "Bash(grep -r \"\\\\$19\\\\|\\\\$28\\\\|\\\\$55\" /Users/kylaho/Downloads/cloudy-vscode/src --include=\"*.tsx\" --include=\"*.ts\")",
-      "Bash(grep -n \"price\\\\|month\\\\|/\\\\$\" /Users/kylaho/Downloads/cloudy-vscode/src/pages/Billing.tsx)"
+      "Bash(grep -n \"price\\\\|month\\\\|/\\\\$\" /Users/kylaho/Downloads/cloudy-vscode/src/pages/Billing.tsx)",
+      "Bash(cp ~/Downloads/cloud-favicon.png /Users/kylaho/Downloads/cloudy-vscode/public/cloud-favicon.png && ls -lh /Users/kylaho/Downloads/cloudy-vscode/public/cloud-favicon.png)",
+      "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")",
+      "Bash(cat)",
+      "Bash(bash /tmp/fix_pages.sh)",
+      "Bash(git commit -m 'Fix subscription not updating after successful Stripe payment *)",
+      "Bash(npm run *)",
+      "Bash(git commit -m 'Implement unique content per business type with trend detection *)"
     ]
   }
 }

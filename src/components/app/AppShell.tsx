@@ -109,7 +109,7 @@ function SidebarContent({
         </p>
 
         <Link
-          to="/coach"
+          to="/dashboard/coach"
           onClick={onNavigate}
           className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-secondary-text transition-colors hover:bg-sage hover:text-forest-800"
         >
@@ -117,7 +117,7 @@ function SidebarContent({
           AI coach
         </Link>
         <Link
-          to="/media"
+          to="/dashboard/media"
           onClick={onNavigate}
           className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-secondary-text transition-colors hover:bg-sage hover:text-forest-800"
         >
@@ -125,7 +125,7 @@ function SidebarContent({
           Media library
         </Link>
         <Link
-          to="/billing"
+          to="/dashboard/billing"
           onClick={onNavigate}
           className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-secondary-text transition-colors hover:bg-sage hover:text-forest-800"
         >
@@ -133,7 +133,7 @@ function SidebarContent({
           Billing
         </Link>
         <Link
-          to="/feedback"
+          to="/dashboard/feedback"
           onClick={onNavigate}
           className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-secondary-text transition-colors hover:bg-sage hover:text-forest-800"
         >

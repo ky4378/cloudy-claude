@@ -2,13 +2,8 @@ import { api } from "@/convex/_generated/api";
 import type { Doc } from "@/convex/_generated/dataModel";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { GlassBackdrop } from "@/components/pilot/GlassBackdrop";
-import {
-  DashboardSidebar,
-  SidebarContent,
-} from "@/components/pilot/Sidebar";
 import { PilotLogo } from "@/components/pilot/BrandMark";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import {
@@ -22,14 +17,12 @@ import {
   Eraser,
   Hash,
   Loader2,
-  Menu,
   MessageCircle,
   Sparkles,
   Wand2,
-  X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router";
+import { useSearchParams } from "react-router";
 
 type Post = Doc<"posts">;
 type ThreadMessage = {
@@ -116,8 +109,6 @@ function CopyRow({
 }
 
 export default function Coach() {
-  const { user, signOut } = useAuth();
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const data = useQuery(api.businesses.myBusiness);
@@ -125,11 +116,9 @@ export default function Coach() {
   const coachUsage = useQuery(api.coach.getCoachUsage);
   const askCoach = useAction(api.coach.askCoach);
   const clearThread = useMutation(api.coach.clearThread);
-  const regenerateCalendar = useAction(api.plan.regenerateCalendar);
 
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const bootRef = useRef(false);
 
@@ -150,15 +139,6 @@ export default function Coach() {
     endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages, sending]);
 
-  // No business yet → onboarding.
-  useEffect(() => {
-    if (data === null) {
-      navigate("/onboarding", { replace: true });
-    }
-  }, [data, navigate]);
-
-  const business = data?.business ?? null;
-  const posts: Post[] = data?.posts ?? [];
 
   const send = async (raw: string) => {
     const message = raw.trim();
@@ -187,21 +167,6 @@ export default function Coach() {
     }
   };
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate("/");
-  };
-
-  const handleRegenerate = async () => {
-    if (!business) return;
-    try {
-      await regenerateCalendar({ businessId: business._id });
-      toast.success("Fresh 30-day plan generated ✨");
-    } catch {
-      toast.error("Couldn't regenerate the plan. Try again.");
-    }
-  };
-
   if (data === undefined) {
     return (
       <div className="relative flex min-h-screen items-center justify-center">
@@ -211,19 +176,9 @@ export default function Coach() {
     );
   }
 
-  if (data === null || !business) {
+  if (data === null) {
     return null;
   }
-
-  const sidebarProps = {
-    business,
-    posts,
-    userName: user?.name,
-    userEmail: user?.email,
-    isAdmin: user?.role === "admin",
-    onSignOut: handleSignOut,
-    onRegenerate: handleRegenerate,
-  };
 
   const lastReply = [...messages].reverse().find((m) => m.role === "assistant");
   const suggestions =
@@ -232,39 +187,11 @@ export default function Coach() {
       : undefined;
 
   return (
-    <div className="min-h-screen">
+    <>
       <GlassBackdrop grid={false} />
 
-      {/* Desktop sidebar */}
-      <DashboardSidebar {...sidebarProps} />
-
-      {/* Mobile top bar */}
-      <header className="glass-nav fixed inset-x-0 top-0 z-40 flex h-16 items-center justify-between px-4 lg:hidden">
-        <PilotLogo size="sm" />
-        <button
-          onClick={() => setMobileNavOpen(true)}
-          className="glass-chip flex h-10 w-10 items-center justify-center rounded-xl"
-          aria-label="Open menu"
-        >
-          {mobileNavOpen ? <X className="size-5" /> : <Menu className="size-5" />}
-        </button>
-      </header>
-
-      {/* Mobile drawer */}
-      <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
-        <SheetContent
-          side="left"
-          className="w-80 border-r border-hairline bg-white p-0"
-        >
-          <SidebarContent
-            {...sidebarProps}
-            onNavigate={() => setMobileNavOpen(false)}
-          />
-        </SheetContent>
-      </Sheet>
-
-      {/* Main content */}
-      <main className="px-4 pt-24 pb-16 lg:pl-[330px] lg:pr-6 lg:pt-10">
+      {/* Main content — sidebar provided by AppShell */}
+      <main className="px-4 pt-8 pb-16 lg:pr-6 lg:pt-10">
         <div className="mx-auto flex max-w-3xl flex-col gap-5">
           <div className="flex items-center gap-3">
             <div className="flex size-11 items-center justify-center rounded-2xl bg-forest-600 text-white shadow-sm">
@@ -290,7 +217,7 @@ export default function Coach() {
                   Marketing coach
                 </span>
                 <span className="hidden rounded-full bg-forest-100 px-2 py-0.5 text-[11px] font-semibold text-forest-800 sm:inline">
-                  knows {business.businessName}
+                  knows {data?.business?.businessName}
                 </span>
               </div>
               <Button
@@ -503,6 +430,6 @@ export default function Coach() {
           </div>
         </div>
       </main>
-    </div>
+    </>
   );
 }

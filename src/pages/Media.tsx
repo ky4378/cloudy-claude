@@ -1,28 +1,19 @@
 import { api } from "@/convex/_generated/api";
-import { useAuth } from "@/hooks/use-auth";
 import { useAction, useQuery } from "convex/react";
 import { GlassBackdrop } from "@/components/pilot/GlassBackdrop";
-import {
-  DashboardSidebar,
-  SidebarContent,
-} from "@/components/pilot/Sidebar";
-import { PilotLogo } from "@/components/pilot/BrandMark";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { toast } from "sonner";
 import {
   Image as ImageIcon,
   Images,
   KeyRound,
   Loader2,
-  Menu,
   RefreshCw,
   Trash2,
   UploadCloud,
   X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router";
 import type { Id } from "@/convex/_generated/dataModel";
 
 type Kind = "logo" | "photo";
@@ -30,8 +21,6 @@ type Kind = "logo" | "photo";
 const MAX_BYTES = 8 * 1024 * 1024;
 
 export default function Media() {
-  const { user, signOut } = useAuth();
-  const navigate = useNavigate();
 
   const data = useQuery(api.businesses.myBusiness);
   const mediaData = useQuery(api.businessMedia.myMedia);
@@ -40,7 +29,6 @@ export default function Media() {
   const deleteImage = useAction(api.supabase.deleteImage);
   const regenerateCalendar = useAction(api.plan.regenerateCalendar);
 
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [selected, setSelected] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [kind, setKind] = useState<Kind>("photo");
@@ -51,9 +39,9 @@ export default function Media() {
 
   useEffect(() => {
     if (data === null) {
-      navigate("/onboarding", { replace: true });
+      window.location.href = "/onboarding";
     }
-  }, [data, navigate]);
+  }, [data]);
 
   const business = data?.business ?? null;
   const posts = data?.posts ?? [];
@@ -65,10 +53,6 @@ export default function Media() {
     setupNeededState ||
     (supabaseStatus !== undefined && supabaseStatus.configured === false);
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate("/");
-  };
 
   const handleRegenerate = async () => {
     if (!business) return;
@@ -174,47 +158,9 @@ export default function Media() {
     return null;
   }
 
-  const sidebarProps = {
-    business,
-    posts,
-    userName: user?.name,
-    userEmail: user?.email,
-    isAdmin: user?.role === "admin",
-    onSignOut: handleSignOut,
-    onRegenerate: handleRegenerate,
-  };
-
   return (
-    <div className="min-h-screen">
+    <>
       <GlassBackdrop grid={false} />
-
-      {/* Desktop sidebar */}
-      <DashboardSidebar {...sidebarProps} />
-
-      {/* Mobile top bar */}
-      <header className="glass-nav fixed inset-x-0 top-0 z-40 flex h-16 items-center justify-between px-4 lg:hidden">
-        <PilotLogo size="sm" />
-        <button
-          onClick={() => setMobileNavOpen(true)}
-          className="glass-chip flex h-10 w-10 items-center justify-center rounded-xl"
-          aria-label="Open menu"
-        >
-          {mobileNavOpen ? <X className="size-5" /> : <Menu className="size-5" />}
-        </button>
-      </header>
-
-      {/* Mobile drawer */}
-      <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
-        <SheetContent
-          side="left"
-          className="w-80 border-r border-hairline bg-white p-0"
-        >
-          <SidebarContent
-            {...sidebarProps}
-            onNavigate={() => setMobileNavOpen(false)}
-          />
-        </SheetContent>
-      </Sheet>
 
       {/* Main content */}
       <main className="px-4 pt-24 pb-16 lg:pl-[330px] lg:pr-6 lg:pt-10">
@@ -425,6 +371,6 @@ export default function Media() {
           </p>
         </div>
       </main>
-    </div>
+    </>
   );
 }

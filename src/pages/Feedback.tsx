@@ -1,29 +1,19 @@
 import { api } from "@/convex/_generated/api";
-import { useAuth } from "@/hooks/use-auth";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { GlassBackdrop } from "@/components/pilot/GlassBackdrop";
-import {
-  DashboardSidebar,
-  SidebarContent,
-} from "@/components/pilot/Sidebar";
-import { PilotLogo } from "@/components/pilot/BrandMark";
 import { RATINGS } from "@/components/pilot/FeedbackDialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { toast } from "sonner";
 import {
   Check,
   Heart,
   Loader2,
-  Menu,
   MessageSquareHeart,
   Send,
   Sparkles,
-  X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router";
 
 const RATING_EMOJI = ["", "😞", "😕", "🙂", "😊", "🤩"];
 
@@ -35,35 +25,21 @@ const formatDate = (ts: number) =>
   });
 
 export default function Feedback() {
-  const { user, signOut } = useAuth();
-  const navigate = useNavigate();
-
   const data = useQuery(api.businesses.myBusiness);
   const history = useQuery(api.feedback.getMyFeedback);
   const submitFeedback = useMutation(api.feedback.submitFeedback);
   const regenerateCalendar = useAction(api.plan.regenerateCalendar);
-
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [rating, setRating] = useState<number | null>(null);
   const [whatWorks, setWhatWorks] = useState("");
   const [improve, setImprove] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [sent, setSent] = useState(false);
 
-  useEffect(() => {
-    if (data === null) {
-      navigate("/onboarding", { replace: true });
-    }
-  }, [data, navigate]);
 
   const business = data?.business ?? null;
   const posts = data?.posts ?? [];
   const submissions = history?.submissions ?? [];
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate("/");
-  };
 
   const handleRegenerate = async () => {
     if (!business) return;
@@ -106,47 +82,9 @@ export default function Feedback() {
     return null;
   }
 
-  const sidebarProps = {
-    business,
-    posts,
-    userName: user?.name,
-    userEmail: user?.email,
-    isAdmin: user?.role === "admin",
-    onSignOut: handleSignOut,
-    onRegenerate: handleRegenerate,
-  };
-
   return (
-    <div className="min-h-screen">
+    <>
       <GlassBackdrop grid={false} />
-
-      {/* Desktop sidebar */}
-      <DashboardSidebar {...sidebarProps} />
-
-      {/* Mobile top bar */}
-      <header className="glass-nav fixed inset-x-0 top-0 z-40 flex h-16 items-center justify-between px-4 lg:hidden">
-        <PilotLogo size="sm" />
-        <button
-          onClick={() => setMobileNavOpen(true)}
-          className="glass-chip flex h-10 w-10 items-center justify-center rounded-xl"
-          aria-label="Open menu"
-        >
-          {mobileNavOpen ? <X className="size-5" /> : <Menu className="size-5" />}
-        </button>
-      </header>
-
-      {/* Mobile drawer */}
-      <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
-        <SheetContent
-          side="left"
-          className="w-80 border-r border-hairline bg-white p-0"
-        >
-          <SidebarContent
-            {...sidebarProps}
-            onNavigate={() => setMobileNavOpen(false)}
-          />
-        </SheetContent>
-      </Sheet>
 
       {/* Main content */}
       <main className="px-4 pt-24 pb-16 lg:pl-[330px] lg:pr-6 lg:pt-10">
@@ -325,6 +263,6 @@ export default function Feedback() {
           </section>
         </div>
       </main>
-    </div>
+    </>
   );
 }

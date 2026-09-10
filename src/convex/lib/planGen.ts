@@ -179,6 +179,7 @@ function buildBatchPrompt(
   count: number,
   startDate: string,
   strategyNote?: string,
+  excludedIdeas?: string[],
 ): string {
   const days = Array.from({ length: count }, (_, i) => {
     const dayIndex = fromDay + i;
@@ -191,12 +192,15 @@ function buildBatchPrompt(
     return `Day ${dayIndex + 1} — ${label} (${date})`;
   }).join("\n");
 
+  const excludedSection = excludedIdeas && excludedIdeas.length > 0
+    ? `\nIDEAS TO AVOID (used by other ${profile.businessType}s, not trending):\n${excludedIdeas.slice(0, 20).join("\n")}\nDO NOT repeat these ideas unless they're a trending topic.\n`
+    : "";
+
   return `Generate part of the 30-day Instagram plan for this business.
 
 BUSINESS CONTEXT (from the owner's questionnaire):
 ${businessContext(profile)}
-${strategyNote ? `\nMARKETING STRATEGY FOR THIS MONTH:\n${strategyNote}\n` : ""}
-This is part of a 30-day plan starting ${startDate}. Generate the following days:
+${strategyNote ? `\nMARKETING STRATEGY FOR THIS MONTH:\n${strategyNote}\n` : ""}${excludedSection}This is part of a 30-day plan starting ${startDate}. Generate the following days:
 ${days}
 
 Return JSON with this exact shape:
@@ -239,6 +243,8 @@ export interface GenOptions {
   salt: number;
   /** Compact summary of the marketing strategy so the days serve it. */
   strategyNote?: string;
+  /** Content ideas to exclude from generation (non-trending ideas from same business type). */
+  excludedIdeas?: string[];
 }
 
 /**
@@ -261,7 +267,7 @@ export async function generateDays(
       },
       {
         role: "user",
-        content: buildBatchPrompt(profile, fromDay, count, opts.startDate, opts.strategyNote),
+        content: buildBatchPrompt(profile, fromDay, count, opts.startDate, opts.strategyNote, opts.excludedIdeas),
       },
     ],
     { maxTokens: 4800, temperature: 0.8, timeoutMs: 180_000 },
