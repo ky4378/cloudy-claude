@@ -91,13 +91,26 @@ export default function Billing() {
   useEffect(() => {
     const outcome = searchParams.get("checkout");
     const sessionId = searchParams.get("session_id");
-    if (outcome === "success" && sessionId) {
+    if (outcome === "success" && sessionId && !verifying) {
       setVerifying(true);
-      verifyCheckout({ sessionId }).finally(() => {
-        setVerifying(false);
-        toast.success("Welcome aboard — your subscription is active ✨");
-        window.history.replaceState({}, "", "/dashboard/billing");
-      });
+      verifyCheckout({ sessionId })
+        .then((result) => {
+          if (result.ok && result.paid) {
+            toast.success("Welcome aboard — your subscription is active ✨");
+            window.history.replaceState({}, "", "/dashboard/billing");
+          } else if (result.ok && !result.paid) {
+            toast.error("Payment not completed. Please try again.");
+          } else {
+            toast.error("Payment verification failed. Please contact support.");
+          }
+        })
+        .catch((err) => {
+          console.error("Checkout verification error:", err);
+          toast.error("Couldn't verify your payment. Please try again.");
+        })
+        .finally(() => {
+          setVerifying(false);
+        });
     } else if (outcome === "cancelled") {
       toast.info("Checkout cancelled — no charge was made.");
       window.history.replaceState({}, "", "/dashboard/billing");

@@ -227,12 +227,23 @@ export const verifyCheckout = action({
     { sessionId },
   ): Promise<{ ok: boolean; paid: boolean; plan?: string }> => {
     const userId = await getAuthUserId(ctx);
-    if (userId === null) return { ok: false, paid: false };
-    if (!STRIPE_SECRET_KEY) return { ok: false, paid: false };
+    if (userId === null) {
+      console.error("verifyCheckout: no auth user");
+      return { ok: false, paid: false };
+    }
+    if (!STRIPE_SECRET_KEY) {
+      console.error("verifyCheckout: no stripe secret key");
+      return { ok: false, paid: false };
+    }
     try {
       const stripe = new Stripe(STRIPE_SECRET_KEY);
       const session = await stripe.checkout.sessions.retrieve(sessionId);
+      if (!session) {
+        console.error("verifyCheckout: session not found", sessionId);
+        return { ok: false, paid: false };
+      }
       if (session.mode !== "subscription" || !session.subscription) {
+        console.warn("verifyCheckout: not a subscription session");
         return { ok: true, paid: false };
       }
       // Ownership check: new sessions are keyed to the caller's user id in
@@ -241,7 +252,10 @@ export const verifyCheckout = action({
       // caller.
       const sessionUserId = session.metadata?.userId;
       if (sessionUserId) {
-        if (sessionUserId !== userId) return { ok: false, paid: false };
+        if (sessionUserId !== userId) {
+          console.error("verifyCheckout: session user mismatch", sessionUserId, userId);
+          return { ok: false, paid: false };
+        }
       } else {
         const businessId = session.client_reference_id as
           | Id<"businesses">
@@ -252,19 +266,27 @@ export const verifyCheckout = action({
             { id: businessId },
           );
           if (!business || business.userId !== userId) {
+            console.error("verifyCheckout: business ownership check failed");
             return { ok: false, paid: false };
           }
         }
       }
       const paid = session.payment_status === "paid";
       if (paid) {
-        const sub = (await stripe.subscriptions.retrieve(
-          session.subscription as string,
-        )) as unknown as SubscriptionSnapshot;
-        await syncSubscription(ctx, sub);
+        try {
+          const sub = (await stripe.subscriptions.retrieve(
+            session.subscription as string,
+          )) as unknown as SubscriptionSnapshot;
+          await syncSubscription(ctx, sub);
+          console.log("verifyCheckout: subscription synced successfully");
+        } catch (syncErr) {
+          console.error("verifyCheckout: sync failed", syncErr instanceof Error ? syncErr.message : syncErr);
+          return { ok: false, paid: false };
+        }
       }
       return { ok: true, paid };
-    } catch {
+    } catch (err) {
+      console.error("verifyCheckout: error", err instanceof Error ? err.message : err);
       return { ok: false, paid: false };
     }
   },
