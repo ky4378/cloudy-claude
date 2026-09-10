@@ -27,7 +27,8 @@
       "Bash(git commit -m 'Fix subscription not updating after successful Stripe payment *)",
       "Bash(npm run *)",
       "Bash(git commit -m 'Implement unique content per business type with trend detection *)",
-      "Bash(git commit -m 'Add live Instagram/TikTok trend integration to content plans *)"
+      "Bash(git commit -m 'Add live Instagram/TikTok trend integration to content plans *)",
+      "Bash(git commit *)"
     ]
   }
 }
