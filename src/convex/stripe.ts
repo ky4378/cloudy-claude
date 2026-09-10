@@ -205,8 +205,8 @@ export const createCheckout = action({
       // {CHECKOUT_SESSION_ID} is replaced by Stripe with the real session id,
       // which the onboarding page uses to verify the payment server-side on
       // return (see verifyCheckout) so generation never waits on the webhook.
-      success_url: `${origin}${redirectTo ?? "/billing"}?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}${redirectTo ?? "/billing"}?checkout=cancelled`,
+      success_url: `${origin}${redirectTo ?? "/dashboard/billing"}?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}${redirectTo ?? "/dashboard/billing"}?checkout=cancelled`,
       allow_promotion_codes: true,
     });
     return { url: session.url ?? "" };
