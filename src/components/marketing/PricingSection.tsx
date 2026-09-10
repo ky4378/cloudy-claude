@@ -45,7 +45,7 @@ export function PricingCards({
             <p className="mt-1 text-sm text-secondary-text">{plan.tagline}</p>
             <p className="mt-6 flex items-baseline gap-1">
               <span className="font-serif text-5xl font-medium tracking-tight text-ink">
-                USD ${plan.price}
+                ${plan.price}
               </span>
               <span className="text-sm text-secondary-text">/month</span>
             </p>
@@ -88,7 +88,7 @@ export function PricingTable() {
             {PLAN_ORDER.map((id) => (
               <th key={id} className="px-4 py-4 text-center">
                 <p className="font-serif text-lg font-medium text-ink">{PLAN_META[id].name}</p>
-                <p className="text-xs text-secondary-text">USD ${PLAN_META[id].price}/mo</p>
+                <p className="text-xs text-secondary-text">${PLAN_META[id].price}/mo</p>
               </th>
             ))}
           </tr>

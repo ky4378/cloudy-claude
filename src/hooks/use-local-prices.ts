@@ -112,10 +112,10 @@ export function useLocalPrices() {
     }).format(amount);
 
   const price = (id: PlanId): string =>
-    `${pricing?.currency ?? "USD"} ${fmt(
+    fmt(
       pricing?.plans[id] ??
         (id === "starter" ? 19 : id === "growth" ? 28 : 55),
-    )}`;
+    );
 
   return {
     pricing,
