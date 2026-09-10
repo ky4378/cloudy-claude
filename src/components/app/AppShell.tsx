@@ -9,14 +9,19 @@ import { useAction, useQuery } from "convex/react";
 import {
   AlertTriangle,
   CalendarDays,
+  CreditCard,
+  Heart,
+  Images,
   Layers3,
   LayoutDashboard,
   Lightbulb,
   Loader2,
   LogOut,
   Menu,
+  MessageCircle,
   Settings,
   Sparkles,
+  Sun,
 } from "lucide-react";
 import { useState } from "react";
 import { Link, Navigate, NavLink, Outlet, useNavigate } from "react-router";
@@ -98,9 +103,45 @@ function SidebarContent({
             {item.label}
           </NavLink>
         ))}
+
+        <p className="mt-4 px-3 pt-2 pb-2 text-[11px] font-semibold uppercase tracking-wider text-secondary-text">
+          Workspace
+        </p>
+
+        <Link
+          to="/coach"
+          onClick={onNavigate}
+          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-secondary-text transition-colors hover:bg-sage hover:text-forest-800"
+        >
+          <MessageCircle className="size-4" />
+          AI coach
+        </Link>
+        <Link
+          to="/media"
+          onClick={onNavigate}
+          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-secondary-text transition-colors hover:bg-sage hover:text-forest-800"
+        >
+          <Images className="size-4" />
+          Media library
+        </Link>
+        <Link
+          to="/billing"
+          onClick={onNavigate}
+          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-secondary-text transition-colors hover:bg-sage hover:text-forest-800"
+        >
+          <CreditCard className="size-4" />
+          Billing
+        </Link>
+        <Link
+          to="/feedback"
+          onClick={onNavigate}
+          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-secondary-text transition-colors hover:bg-sage hover:text-forest-800"
+        >
+          <Heart className="size-4" />
+          Give feedback
+        </Link>
       </nav>
       <div className="space-y-3 p-4">
-        <CreditMeter usage={data.usage} />
         <div className="rounded-2xl border border-hairline bg-white p-4">
           <p className="truncate text-sm font-semibold text-ink">{data.business.businessName}</p>
           <p className="truncate text-xs text-secondary-text">
