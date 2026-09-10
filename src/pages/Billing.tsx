@@ -1,15 +1,8 @@
 import { api } from "@/convex/_generated/api";
-import { useAuth } from "@/hooks/use-auth";
 import { useAction, useQuery } from "convex/react";
 import { CheckoutOverlay } from "@/components/pilot/CheckoutOverlay";
 import { GlassBackdrop } from "@/components/pilot/GlassBackdrop";
-import {
-  DashboardSidebar,
-  SidebarContent,
-} from "@/components/pilot/Sidebar";
-import { PilotLogo } from "@/components/pilot/BrandMark";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { toast } from "sonner";
 import {
   BadgeCheck,
@@ -17,13 +10,11 @@ import {
   CreditCard,
   ExternalLink,
   Loader2,
-  Menu,
   ShieldCheck,
   Sparkles,
-  X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router";
+import { useSearchParams } from "react-router";
 import {
   redirectToCheckout,
   useLocalPrices,
@@ -71,8 +62,6 @@ const STATUS_META: Record<string, { label: string; cls: string }> = {
 };
 
 export default function Billing() {
-  const { user, signOut } = useAuth();
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
   const data = useQuery(api.businesses.myBusiness);
@@ -81,43 +70,45 @@ export default function Billing() {
   const createPortalSession = useAction(api.stripe.createPortalSession);
   const requestCancellation = useAction(api.stripe.requestCancellation);
   const resumeSubscription = useAction(api.stripe.resumeSubscription);
+  const verifyCheckout = useAction(api.stripe.verifyCheckout);
   const { price, currency } = useLocalPrices();
 
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [busyPlan, setBusyPlan] = useState<PlanId | null>(null);
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
   const [portalBusy, setPortalBusy] = useState(false);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
   const [cancelBusy, setCancelBusy] = useState(false);
   const [resumeBusy, setResumeBusy] = useState(false);
+  const [verifying, setVerifying] = useState(false);
 
   useEffect(() => {
     if (data === null) {
-      navigate("/onboarding", { replace: true });
+      window.location.href = "/onboarding";
     }
-  }, [data, navigate]);
+  }, [data]);
 
-  // Toast the checkout outcome once.
+  // Verify checkout and sync subscription, then show outcome.
   useEffect(() => {
     const outcome = searchParams.get("checkout");
-    if (outcome === "success") {
-      toast.success("Welcome aboard — your subscription is active ✨");
-      window.history.replaceState({}, "", "/billing");
+    const sessionId = searchParams.get("session_id");
+    if (outcome === "success" && sessionId) {
+      setVerifying(true);
+      verifyCheckout({ sessionId }).finally(() => {
+        setVerifying(false);
+        toast.success("Welcome aboard — your subscription is active ✨");
+        window.history.replaceState({}, "", "/dashboard/billing");
+      });
     } else if (outcome === "cancelled") {
       toast.info("Checkout cancelled — no charge was made.");
-      window.history.replaceState({}, "", "/billing");
+      window.history.replaceState({}, "", "/dashboard/billing");
     }
-  }, [searchParams]);
+  }, [searchParams, verifyCheckout]);
 
   const business = data?.business ?? null;
   const posts = data?.posts ?? [];
   const sub = billing?.subscription ?? null;
   const cutoff = billing?.cutoff ?? null;
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate("/");
-  };
 
   const subscribe = async (plan: PlanId) => {
     if (busyPlan) return;
@@ -222,50 +213,12 @@ export default function Billing() {
     return null;
   }
 
-  const sidebarProps = {
-    business,
-    posts,
-    userName: user?.name,
-    userEmail: user?.email,
-    isAdmin: user?.role === "admin",
-    onSignOut: handleSignOut,
-    onRegenerate: () => {},
-  };
-
   const statusMeta = STATUS_META[sub?.status ?? ""] ?? STATUS_META.canceled;
   const currentPlan = PLANS.find((p) => p.id === sub?.plan);
 
   return (
-    <div className="min-h-screen">
+    <>
       <GlassBackdrop grid={false} />
-
-      {/* Desktop sidebar */}
-      <DashboardSidebar {...sidebarProps} />
-
-      {/* Mobile top bar */}
-      <header className="glass-nav fixed inset-x-0 top-0 z-40 flex h-16 items-center justify-between px-4 lg:hidden">
-        <PilotLogo size="sm" />
-        <button
-          onClick={() => setMobileNavOpen(true)}
-          className="glass-chip flex h-10 w-10 items-center justify-center rounded-xl"
-          aria-label="Open menu"
-        >
-          {mobileNavOpen ? <X className="size-5" /> : <Menu className="size-5" />}
-        </button>
-      </header>
-
-      {/* Mobile drawer */}
-      <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
-        <SheetContent
-          side="left"
-          className="w-80 border-r border-hairline bg-white p-0"
-        >
-          <SidebarContent
-            {...sidebarProps}
-            onNavigate={() => setMobileNavOpen(false)}
-          />
-        </SheetContent>
-      </Sheet>
 
       {/* Main content */}
       <main className="px-4 pt-24 pb-16 lg:pl-[330px] lg:pr-6 lg:pt-10">
@@ -285,66 +238,72 @@ export default function Billing() {
             </div>
           </div>
 
-          {!sub ? (
-            <>
-              {/* Plan cards */}
-              <div className="grid gap-5 md:grid-cols-3">
-                {PLANS.map((p) => (
-                  <div
-                    key={p.id}
-                    className={`relative flex flex-col rounded-3xl p-6 ${
-                      p.popular ? "glass-panel ring-2 ring-ink" : "glass-panel-soft"
+          {/* Plan cards - always show for upgrade options */}
+          <div className="grid gap-5 md:grid-cols-3">
+            {PLANS.map((p) => {
+              const isCurrentPlan = sub?.plan === p.id;
+              const planIndex = PLAN_ORDER.indexOf(p.id);
+              const currentPlanIndex = sub?.plan ? PLAN_ORDER.indexOf(sub.plan as PlanId) : -1;
+              const isUpgrade = currentPlanIndex >= 0 && planIndex > currentPlanIndex;
+              const isDowngrade = currentPlanIndex >= 0 && planIndex < currentPlanIndex;
+
+              return (
+                <div
+                  key={p.id}
+                  className={`relative flex flex-col rounded-3xl p-6 ${
+                    p.popular ? "glass-panel ring-2 ring-ink" : "glass-panel-soft"
+                  }`}
+                >
+                  {p.popular && (
+                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-ink px-3.5 py-1 text-xs font-bold text-white">
+                      Most popular
+                    </span>
+                  )}
+                  <span className="text-2xl">{PLAN_EMOJI[p.id]}</span>
+                  <h3 className="mt-2 font-serif text-lg font-semibold text-ink">
+                    {p.name}
+                  </h3>
+                  <p className="mt-0.5 text-xs text-[#8f8b83]">{p.blurb}</p>
+                  <div className="mt-4 flex items-baseline gap-1">
+                    <span className="font-serif text-3xl font-semibold text-ink">
+                      {price(p.id)}
+                    </span>
+                    <span className="text-sm font-medium text-[#8f8b83]">
+                      /month
+                    </span>
+                  </div>
+                  <Button
+                    onClick={() => void subscribe(p.id)}
+                    disabled={busyPlan !== null || isCurrentPlan}
+                    className={`mt-6 w-full rounded-xl ${
+                      p.popular
+                        ? ""
+                        : "bg-white text-ink ring-1 ring-hairline hover:bg-cream"
                     }`}
                   >
-                    {p.popular && (
-                      <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-ink px-3.5 py-1 text-xs font-bold text-white">
-                        Most popular
-                      </span>
+                    {busyPlan === p.id ? (
+                      <Loader2 className="mr-2 size-4 animate-spin" />
+                    ) : (
+                      <Sparkles className="mr-2 size-4" />
                     )}
-                    <span className="text-2xl">{PLAN_EMOJI[p.id]}</span>
-                    <h3 className="mt-2 font-serif text-lg font-semibold text-ink">
-                      {p.name}
-                    </h3>
-                    <p className="mt-0.5 text-xs text-[#8f8b83]">{p.blurb}</p>
-                    <div className="mt-4 flex items-baseline gap-1">
-                      <span className="font-serif text-3xl font-semibold text-ink">
-                        {price(p.id)}
-                      </span>
-                      <span className="text-sm font-medium text-[#8f8b83]">
-                        /month
-                      </span>
-                    </div>
-                    <Button
-                      onClick={() => void subscribe(p.id)}
-                      disabled={busyPlan !== null}
-                      className={`mt-6 w-full rounded-xl ${
-                        p.popular
-                          ? ""
-                          : "bg-white text-ink ring-1 ring-hairline hover:bg-cream"
-                      }`}
-                    >
-                      {busyPlan === p.id ? (
-                        <Loader2 className="mr-2 size-4 animate-spin" />
-                      ) : (
-                        <Sparkles className="mr-2 size-4" />
-                      )}
-                      Subscribe
-                    </Button>
-                  </div>
-                ))}
-              </div>
+                    {isCurrentPlan ? "Current plan" : isUpgrade ? "Upgrade" : "Subscribe"}
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
 
-              <p className="flex items-center justify-center gap-1.5 text-center text-xs text-[#8f8b83]">
-                <ShieldCheck className="size-3.5" />
-                Auto-renews monthly. Payments are handled securely by Stripe.
-              </p>
-              {currency !== "USD" && (
-                <p className="text-center text-[11px] text-[#a9a49a]">
-                  Prices shown and charged in {currency}.
-                </p>
-              )}
-            </>
-          ) : (
+          <p className="flex items-center justify-center gap-1.5 text-center text-xs text-[#8f8b83]">
+            <ShieldCheck className="size-3.5" />
+            Auto-renews monthly. Payments are handled securely by Stripe.
+          </p>
+          {currency !== "USD" && (
+            <p className="text-center text-[11px] text-[#a9a49a]">
+              Prices shown and charged in {currency}.
+            </p>
+          )}
+
+          {sub && (
             <>
               {/* Current subscription */}
               <div className="glass-panel rounded-3xl p-6">
@@ -497,6 +456,6 @@ export default function Billing() {
       {(busyPlan !== null || portalBusy) && (
         <CheckoutOverlay url={checkoutUrl} />
       )}
-    </div>
+    </>
   );
 }
