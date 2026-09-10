@@ -26,6 +26,7 @@ import {
 } from "./lib/planGen";
 import { generateStrategyAI, strategyNote } from "./lib/insights";
 import { getLimitsFor, regenerationDays } from "./lib/planLimits";
+import { fetchLiveTrends, formatTrendsPrompt } from "./lib/trends";
 
 // ---------------------------------------------------------------------------
 // Profile helpers
@@ -116,6 +117,39 @@ const planDepth = async (ctx: ActionCtx, userId: Id<"users">) => {
 // ---------------------------------------------------------------------------
 // The pipeline
 // ---------------------------------------------------------------------------
+
+/**
+ * Fetch and cache live trends for a business type.
+ * Only called when user regenerates the plan (not automatically).
+ */
+async function fetchAndCacheLiveTrends(
+  ctx: ActionCtx,
+  businessType: string,
+): Promise<string> {
+  try {
+    const cached = await ctx.runQuery(internal.businesses.getCachedTrends, {
+      businessType,
+    });
+
+    if (cached) {
+      return formatTrendsPrompt(cached);
+    }
+
+    const liveTrends = await fetchLiveTrends(businessType);
+    await ctx.runMutation(internal.businesses.cacheLiveTrends, {
+      businessType,
+      audios: liveTrends.audios,
+      reels: liveTrends.reels,
+      hashtags: liveTrends.hashtags,
+      themes: liveTrends.themes,
+      topics: liveTrends.topics,
+    });
+
+    return formatTrendsPrompt(liveTrends);
+  } catch {
+    return "";
+  }
+}
 
 /**
  * Strategy + 30-day plan for a business. Costs one "plan". Marks planStatus
@@ -269,11 +303,13 @@ export const regeneratePost = action({
     const excludedIdeas = await ctx.runQuery(internal.businesses.getExcludedContentIdeas, {
       businessId: business._id,
     });
+    const liveTrendsPrompt = await fetchAndCacheLiveTrends(ctx, business.businessType);
     const opts = {
       startDate: anchor,
       salt,
       strategyNote: business.strategy ? strategyNote(business.strategy) : undefined,
       excludedIdeas,
+      liveTrendsPrompt,
     };
 
     const aiPlans = await generateRangeWithAI(profile, post.dayIndex, 1, opts);
@@ -324,11 +360,13 @@ export const regenerateDays = action({
     const excludedIdeas = await ctx.runQuery(internal.businesses.getExcludedContentIdeas, {
       businessId,
     });
+    const liveTrendsPrompt = await fetchAndCacheLiveTrends(ctx, business.businessType);
     const opts = {
       startDate: anchor,
       salt,
       strategyNote: business.strategy ? strategyNote(business.strategy) : undefined,
       excludedIdeas,
+      liveTrendsPrompt,
     };
 
     const aiPlans = await generateRangeWithAI(profile, fromDayIndex, n, opts);

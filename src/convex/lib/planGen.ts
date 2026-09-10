@@ -180,6 +180,7 @@ function buildBatchPrompt(
   startDate: string,
   strategyNote?: string,
   excludedIdeas?: string[],
+  liveTrendsPrompt?: string,
 ): string {
   const days = Array.from({ length: count }, (_, i) => {
     const dayIndex = fromDay + i;
@@ -200,7 +201,7 @@ function buildBatchPrompt(
 
 BUSINESS CONTEXT (from the owner's questionnaire):
 ${businessContext(profile)}
-${strategyNote ? `\nMARKETING STRATEGY FOR THIS MONTH:\n${strategyNote}\n` : ""}${excludedSection}This is part of a 30-day plan starting ${startDate}. Generate the following days:
+${strategyNote ? `\nMARKETING STRATEGY FOR THIS MONTH:\n${strategyNote}\n` : ""}${excludedSection}${liveTrendsPrompt || ""}This is part of a 30-day plan starting ${startDate}. Generate the following days:
 ${days}
 
 Return JSON with this exact shape:
@@ -245,6 +246,8 @@ export interface GenOptions {
   strategyNote?: string;
   /** Content ideas to exclude from generation (non-trending ideas from same business type). */
   excludedIdeas?: string[];
+  /** Live trends from Instagram/TikTok to naturally weave into the plan. */
+  liveTrendsPrompt?: string;
 }
 
 /**
@@ -267,7 +270,7 @@ export async function generateDays(
       },
       {
         role: "user",
-        content: buildBatchPrompt(profile, fromDay, count, opts.startDate, opts.strategyNote, opts.excludedIdeas),
+        content: buildBatchPrompt(profile, fromDay, count, opts.startDate, opts.strategyNote, opts.excludedIdeas, opts.liveTrendsPrompt),
       },
     ],
     { maxTokens: 4800, temperature: 0.8, timeoutMs: 180_000 },

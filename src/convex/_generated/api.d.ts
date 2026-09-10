@@ -31,6 +31,7 @@ import type * as lib_planGen from "../lib/planGen.js";
 import type * as lib_planLimits from "../lib/planLimits.js";
 import type * as lib_research from "../lib/research.js";
 import type * as lib_strategy from "../lib/strategy.js";
+import type * as lib_trends from "../lib/trends.js";
 import type * as lib_voice from "../lib/voice.js";
 import type * as plan from "../plan.js";
 import type * as stripe from "../stripe.js";
@@ -71,6 +72,7 @@ declare const fullApi: ApiFromModules<{
   "lib/planLimits": typeof lib_planLimits;
   "lib/research": typeof lib_research;
   "lib/strategy": typeof lib_strategy;
+  "lib/trends": typeof lib_trends;
   "lib/voice": typeof lib_voice;
   plan: typeof plan;
   stripe: typeof stripe;

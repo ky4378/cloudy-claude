@@ -396,3 +396,74 @@ export const patchPostFields = internalMutation({
     await ctx.db.patch(postId, patch as Partial<Doc<"posts">>);
   },
 });
+
+// ---------------------------------------------------------------------------
+// Live trend cache management
+// ---------------------------------------------------------------------------
+
+/** Get cached live trends for a business type (if not expired). */
+export const getCachedTrends = internalQuery({
+  args: { businessType: v.string() },
+  handler: async (ctx, { businessType }) => {
+    const cache = await ctx.db
+      .query("trendCache")
+      .withIndex("by_type_expiry", (q) => q.eq("businessType", businessType))
+      .first();
+
+    if (!cache || cache.expiresAt < Date.now()) {
+      return null;
+    }
+
+    return {
+      audios: cache.audios,
+      reels: cache.reels,
+      hashtags: cache.hashtags,
+      themes: cache.themes,
+      topics: cache.topics,
+    };
+  },
+});
+
+/** Cache live trends for a business type (expires after 24 hours). */
+export const cacheLiveTrends = internalMutation({
+  args: {
+    businessType: v.string(),
+    audios: v.array(v.string()),
+    reels: v.array(v.string()),
+    hashtags: v.array(v.string()),
+    themes: v.array(v.string()),
+    topics: v.array(v.string()),
+  },
+  handler: async (ctx, { businessType, audios, reels, hashtags, themes, topics }) => {
+    const now = Date.now();
+    const expiresAt = now + 24 * 60 * 60 * 1000; // 24 hours
+
+    const existing = await ctx.db
+      .query("trendCache")
+      .withIndex("by_type_expiry", (q) => q.eq("businessType", businessType))
+      .first();
+
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        audios,
+        reels,
+        hashtags,
+        themes,
+        topics,
+        fetchedAt: now,
+        expiresAt,
+      });
+    } else {
+      await ctx.db.insert("trendCache", {
+        businessType,
+        audios,
+        reels,
+        hashtags,
+        themes,
+        topics,
+        fetchedAt: now,
+        expiresAt,
+      });
+    }
+  },
+});

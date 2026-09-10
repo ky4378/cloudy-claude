@@ -261,6 +261,19 @@ const schema = defineSchema(
       .index("by_user", ["userId"])
       .index("by_customer", ["stripeCustomerId"]),
 
+    // Cached live trends from Instagram/TikTok + third-party APIs (refreshed daily).
+    // Used to inject real-time trending content into plan generation.
+    trendCache: defineTable({
+      businessType: v.string(), // cafe | restaurant | salon | etc
+      audios: v.array(v.string()), // trending audio/music titles
+      reels: v.array(v.string()), // trending reel scripts/ideas
+      hashtags: v.array(v.string()), // trending hashtags
+      themes: v.array(v.string()), // trending content themes
+      topics: v.array(v.string()), // trending topics/niches
+      fetchedAt: v.number(), // timestamp of when trends were fetched
+      expiresAt: v.number(), // cache expiry timestamp (24h from fetchedAt)
+    }).index("by_type_expiry", ["businessType", "expiresAt"]),
+
     // Launch waitlist — public queries only ever expose the count.
     waitlist: defineTable({
       email: v.string(), // stored lowercased + trimmed
