@@ -186,7 +186,14 @@ Hard rules:
 - Never produce generic advice that would apply to any business. Use the business's real products, location, audience, tone, differentiator and challenges.
 - Respect the preferred brand tone in every sentence you write for them.
 - Respect the "content they do NOT want" list absolutely.
-- Keep language plain and friendly; no jargon, no buzzwords.`;
+- Keep language plain and friendly; no jargon, no buzzwords.
+- **CRITICAL: Validate all generated content against the business's actual products/services. Do NOT generate generic industry content that ignores the business focus. Example: an acai bowl cafe should NEVER get coffee content even if marked as a cafe type. Always prioritize actual business offerings over industry category.**`;
+
+// TODO: Quality gate — AI-generated plans should validate that post ideas match
+// actual business products/services, not just industry type. Cases like "Acai Affair"
+// generating coffee posts show the AI blindly follows category without respecting
+// real business context. Add post-generation validation that rejects content
+// irrelevant to their offerings.
 
 /** Small helpers used to validate model output. */
 export const asString = (x: unknown, fallback = ""): string =>
