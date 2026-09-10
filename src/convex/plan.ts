@@ -179,12 +179,15 @@ async function runPlanPipeline(
     const limits = await planDepth(ctx, userId);
     const profile = toProfile(business);
 
-    // 1. Brand research from the owner's live profile (official Graph API
-    //    when connected; otherwise best-effort public research).
-    const research = await researchProfiles(
-      { instagram: business.instagram },
-      { igToken: business.igToken, igAccountId: business.igConnectedAccountId },
-    );
+    // 1 & 2. Run brand research and strategy generation in parallel.
+    const [research, strategy] = await Promise.all([
+      researchProfiles(
+        { instagram: business.instagram },
+        { igToken: business.igToken, igAccountId: business.igConnectedAccountId },
+      ),
+      generateStrategyAI(profile, limits.marketingStrategy),
+    ]);
+
     if (research) {
       profile.brandResearch = research;
       await ctx.runMutation(internal.businesses.patchBrandResearch, {
@@ -193,8 +196,6 @@ async function runPlanPipeline(
       });
     }
 
-    // 2. Marketing strategy — the plan is written to serve it.
-    const strategy = await generateStrategyAI(profile, limits.marketingStrategy);
     await ctx.runMutation(internal.businesses.patchStrategy, { businessId, strategy });
 
     // 3. The 30-day content plan (use fast deterministic engine for instant results).
@@ -204,17 +205,20 @@ async function runPlanPipeline(
     const opts = { startDate: anchor, salt, strategyNote: strategyNote(strategy), excludedIdeas };
     const plans = buildCalendarFallback(profile, opts);
 
-    await ctx.runMutation(internal.businesses.replacePosts, { businessId, plans });
-    await ctx.runMutation(internal.businesses.finishPlan, {
-      businessId,
-      salt,
-      planStartDate: anchor,
-    });
-    await ctx.runMutation(internal.billing.incrementUsage, {
-      userId,
-      feature: "plans",
-      businessId,
-    });
+    // Run all database updates in parallel.
+    await Promise.all([
+      ctx.runMutation(internal.businesses.replacePosts, { businessId, plans }),
+      ctx.runMutation(internal.businesses.finishPlan, {
+        businessId,
+        salt,
+        planStartDate: anchor,
+      }),
+      ctx.runMutation(internal.billing.incrementUsage, {
+        userId,
+        feature: "plans",
+        businessId,
+      }),
+    ]);
 
     // 4. Background insights (included with the plan — no extra credits).
     ctx.scheduler.runAfter(0, internal.ai.postPlanAnalysis, { businessId });
