@@ -305,16 +305,24 @@ export const generateRecommendations = action({
 // 9. Menu analysis (onboarding assistance)
 // ---------------------------------------------------------------------------
 
-import { analyzeMenuText } from "./lib/menuAnalysis";
+import { analyzeMenuText, analyzeMenuImage } from "./lib/menuAnalysis";
 
 export const analyzeMenuForProducts = action({
-  args: { menuText: v.string() },
-  handler: async (ctx, { menuText }) => {
+  args: {
+    menuText: v.optional(v.string()),
+    imageBase64: v.optional(v.string()),
+  },
+  handler: async (ctx, { menuText, imageBase64 }) => {
     const userId = await getAuthUserId(ctx);
     if (userId === null) throw new Error("Not authenticated");
 
-    const result = await analyzeMenuText(menuText);
-    return result;
+    if (imageBase64) {
+      return await analyzeMenuImage(imageBase64);
+    } else if (menuText) {
+      return await analyzeMenuText(menuText);
+    }
+
+    throw new Error("Provide either menuText or imageBase64");
   },
 });
 

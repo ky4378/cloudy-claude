@@ -182,8 +182,9 @@ interface MenuUploadFieldProps {
 function MenuUploadField({ value, onChange, placeholder }: MenuUploadFieldProps) {
   const analyzeMenu = useAction(api.ai.analyzeMenuForProducts);
   const [analyzing, setAnalyzing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleAnalyze = async () => {
+  const handleAnalyzeText = async () => {
     if (!value.trim()) {
       toast.error("Paste your menu text first");
       return;
@@ -195,7 +196,7 @@ function MenuUploadField({ value, onChange, placeholder }: MenuUploadFieldProps)
       if (result.products.length > 0) {
         const extractedText = result.products.join("\n");
         onChange(extractedText);
-        toast.success(`✨ AI extracted ${result.products.length} products! Refine as needed.`);
+        toast.success(`✨ AI extracted ${result.products.length} products!`);
       } else {
         toast.error("Couldn't extract products. Make sure you pasted menu content.");
       }
@@ -203,6 +204,35 @@ function MenuUploadField({ value, onChange, placeholder }: MenuUploadFieldProps)
       toast.error("Analysis failed. Try refining your menu text.");
       console.error(err);
     } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  const handleFileUpload = async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload an image file");
+      return;
+    }
+
+    setAnalyzing(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const base64 = (e.target?.result as string).split(",")[1];
+        const result = await analyzeMenu({ imageBase64: base64 });
+        if (result.products.length > 0) {
+          const extractedText = result.products.join("\n");
+          onChange(extractedText);
+          toast.success(`✨ AI extracted ${result.products.length} products from your menu! 📸`);
+        } else {
+          toast.error("Couldn't extract products from the image. Try a clearer photo.");
+        }
+        setAnalyzing(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      toast.error("Image analysis failed. Try uploading a clearer photo.");
+      console.error(err);
       setAnalyzing(false);
     }
   };
@@ -219,24 +249,51 @@ function MenuUploadField({ value, onChange, placeholder }: MenuUploadFieldProps)
         <div className="flex flex-col gap-2">
           <button
             type="button"
-            onClick={handleAnalyze}
+            onClick={handleAnalyzeText}
             disabled={analyzing || !value.trim()}
-            className="flex h-20 w-20 flex-col items-center justify-center rounded-xl border-2 border-dashed border-hairline bg-sage/30 transition-colors hover:border-forest-400 hover:bg-sage disabled:opacity-50"
-            title="Analyze menu with AI"
+            className="flex h-20 w-20 flex-col items-center justify-center rounded-xl border-2 border-dashed border-forest-300 bg-sage transition-colors hover:border-forest-400 hover:bg-sage disabled:opacity-50"
+            title="Analyze text with AI"
           >
             {analyzing ? (
               <Loader2 className="size-5 animate-spin text-forest-600" />
             ) : (
               <>
                 <Sparkles className="size-5 text-forest-600" />
-                <span className="text-xs font-semibold text-forest-700">Analyze</span>
+                <span className="text-xs font-semibold text-forest-700">Text</span>
               </>
             )}
           </button>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={analyzing}
+            className="flex h-20 w-20 flex-col items-center justify-center rounded-xl border-2 border-dashed border-forest-300 bg-sage transition-colors hover:border-forest-400 hover:bg-sage disabled:opacity-50"
+            title="Upload menu photo"
+          >
+            {analyzing ? (
+              <Loader2 className="size-5 animate-spin text-forest-600" />
+            ) : (
+              <>
+                <Upload className="size-5 text-forest-600" />
+                <span className="text-xs font-semibold text-forest-700">Photo</span>
+              </>
+            )}
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleFileUpload(file);
+              e.target.value = "";
+            }}
+            className="hidden"
+          />
         </div>
       </div>
       <p className="text-xs text-secondary-text">
-        Paste your menu text and click Analyze, or type products manually.
+        Paste menu text and click Text, or upload a menu photo and click Photo for AI analysis.
       </p>
     </div>
   );
