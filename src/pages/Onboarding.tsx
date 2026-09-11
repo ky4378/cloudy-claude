@@ -219,21 +219,47 @@ function MenuUploadField({ value, onChange, placeholder }: MenuUploadFieldProps)
     setAnalyzing(true);
     try {
       const reader = new FileReader();
-      reader.onload = async (e) => {
-        const base64 = (e.target?.result as string).split(",")[1];
-        const result = await analyzeMenu({ imageBase64: base64 });
-        if (result.products.length > 0) {
-          const extractedText = result.products.join("\n");
-          onChange(extractedText);
-          toast.success(`✨ AI extracted ${result.products.length} products from your menu! 📸`);
-        } else {
-          toast.error("Couldn't extract products from the image. Try a clearer photo.");
-        }
+      reader.onerror = () => {
+        toast.error("Failed to read image file");
         setAnalyzing(false);
+      };
+      reader.onload = async (e) => {
+        try {
+          const dataUrl = e.target?.result as string;
+          if (!dataUrl) {
+            toast.error("Failed to read image");
+            setAnalyzing(false);
+            return;
+          }
+
+          const base64 = dataUrl.split(",")[1];
+          if (!base64) {
+            toast.error("Invalid image format");
+            setAnalyzing(false);
+            return;
+          }
+
+          console.log("Sending image to API, base64 length:", base64.length);
+          const result = await analyzeMenu({ imageBase64: base64 });
+
+          if (result.products && result.products.length > 0) {
+            const extractedText = result.products.join("\n");
+            onChange(extractedText);
+            toast.success(`✨ AI extracted ${result.products.length} products from your menu! 📸`);
+          } else {
+            toast.error("No products found in the image. Please make sure it's a clear menu photo.");
+          }
+        } catch (err) {
+          const errorMsg = err instanceof Error ? err.message : String(err);
+          console.error("Menu analysis error:", errorMsg);
+          toast.error(`Analysis failed: ${errorMsg}`);
+        } finally {
+          setAnalyzing(false);
+        }
       };
       reader.readAsDataURL(file);
     } catch (err) {
-      toast.error("Image analysis failed. Try uploading a clearer photo.");
+      toast.error("Failed to process image. Try uploading a clearer photo.");
       console.error(err);
       setAnalyzing(false);
     }

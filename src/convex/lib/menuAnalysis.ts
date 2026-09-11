@@ -1,8 +1,9 @@
 /**
- * Menu analysis — extract products from menu text.
+ * Menu analysis — extract products from menu text or images.
+ * Uses the configured OpenAI-compatible API which supports vision.
  */
 
-import { chatJson } from "./ai";
+import { chatJson, chat, parseJson } from "./ai";
 
 export interface MenuAnalysisResult {
   products: string[];
@@ -42,66 +43,115 @@ Extract 5-15 key products. Be specific. Remove generic items like "Water" unless
 }
 
 /**
- * Analyze menu image using Claude's vision API.
+ * Analyze menu image using the OpenAI-compatible API (gpt-4-turbo or gpt-4o).
+ * Both support vision natively and work with base64 images.
  */
 export async function analyzeMenuImage(imageBase64: string): Promise<MenuAnalysisResult> {
+  if (!imageBase64 || imageBase64.length === 0) {
+    console.error("Image base64 is empty");
+    return { products: [], highlights: "" };
+  }
+
   try {
-    const anthropicKey = process.env.ANTHROPIC_API_KEY;
-    if (!anthropicKey) return { products: [], highlights: "" };
+    console.log("Starting menu image analysis via OpenAI API, base64 length:", imageBase64.length);
 
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-api-key": anthropicKey,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-opus-5",
-        max_tokens: 1024,
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "image",
-                source: {
-                  type: "base64",
-                  media_type: "image/jpeg",
-                  data: imageBase64,
-                },
-              },
-              {
-                type: "text",
-                text: `Analyze this menu image and extract all products/dishes/beverages offered.
-Return ONLY valid JSON:
-{
-  "products": ["Product 1", "Product 2", ...],
-  "highlights": "Brief summary of specialty items"
-}
-Extract 5-15 key products. Be specific.`,
-              },
-            ],
-          },
-        ],
-      }),
-    });
+    const apiKey = process.env.OPENAI_API_KEY;
+    const model = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
+    const baseUrl = (process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1").replace(/\/$/, "");
 
-    if (!response.ok) {
-      console.error("Vision API error:", response.statusText);
+    if (!apiKey) {
+      console.error("OPENAI_API_KEY not configured");
       return { products: [], highlights: "" };
     }
 
-    const data = await response.json() as any;
-    const content = data.content?.[0]?.text;
-    if (content) {
-      const parsed = JSON.parse(content);
-      return parsed as MenuAnalysisResult;
-    }
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 90_000);
 
-    return { products: [], highlights: "" };
+    try {
+      const response = await fetch(`${baseUrl}/chat/completions`, {
+        method: "POST",
+        signal: controller.signal,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model,
+          max_tokens: 1024,
+          messages: [
+            {
+              role: "user",
+              content: [
+                {
+                  type: "image_url",
+                  image_url: {
+                    url: `data:image/jpeg;base64,${imageBase64}`,
+                  },
+                },
+                {
+                  type: "text",
+                  text: `Analyze this menu image and extract ALL products, dishes, and beverages you can see.
+
+Return ONLY valid JSON with no markdown, code blocks, or extra text:
+{
+  "products": ["item1", "item2", ...],
+  "highlights": "1-2 sentence summary"
+}
+
+Rules:
+- Extract 5-20 visible items
+- Include appetizers, mains, sides, desserts, beverages, etc.
+- Be specific: "Penne Carbonara" not just "Pasta"
+- Skip generic items like "water" or "napkins" unless specialty
+- highlights: what makes this menu unique`,
+                },
+              ],
+            },
+          ],
+          response_format: { type: "json_object" },
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        console.error("Vision API error:", response.status, error);
+        return { products: [], highlights: "" };
+      }
+
+      const data = (await response.json()) as any;
+      const content = data.choices?.[0]?.message?.content;
+
+      if (!content) {
+        console.error("No response content from API");
+        return { products: [], highlights: "" };
+      }
+
+      console.log("API response received, parsing:", content.substring(0, 300));
+
+      const parsed = parseJson<MenuAnalysisResult>(content);
+      if (!parsed) {
+        console.error("Failed to parse JSON response");
+        return { products: [], highlights: "" };
+      }
+
+      if (!Array.isArray(parsed.products)) {
+        console.error("Invalid response: products is not an array", parsed);
+        return { products: [], highlights: "" };
+      }
+
+      const filtered = parsed.products.filter((p) => typeof p === "string" && p.trim());
+      console.log("Successfully extracted", filtered.length, "products from menu image");
+
+      return {
+        products: filtered,
+        highlights: typeof parsed.highlights === "string" ? parsed.highlights : "",
+      };
+    } finally {
+      clearTimeout(timer);
+    }
   } catch (err) {
-    console.error("Menu image analysis failed:", err);
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    console.error("Menu image analysis error:", errorMsg);
     return { products: [], highlights: "" };
   }
 }
