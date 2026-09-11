@@ -114,16 +114,54 @@ const applyFocusDay = (
   kbInfo: TypeKB,
   rng: Rng,
 ): DayPlan => {
-  const subject = special.shot.subject;
+  let subject = special.shot.subject;
+
+  // Customize subject based on actual products (e.g., acai bowls instead of lattes).
+  if (biz.businessType === "cafe" && biz.products.length > 0) {
+    const productStr = biz.products.join(" ").toLowerCase();
+    if ((productStr.includes("acai") || productStr.includes("açai")) && subject.includes("latte")) {
+      subject = subject.replace(/latte|coffee|espresso/gi, (match) => {
+        if (match.toLowerCase() === "latte") return "acai bowl";
+        if (match.toLowerCase() === "coffee") return "acai";
+        return match;
+      });
+    } else if (productStr.includes("tea") && subject.includes("latte")) {
+      subject = subject.replace(/latte|coffee|espresso/gi, (match) => {
+        if (match.toLowerCase() === "latte") return "signature tea";
+        if (match.toLowerCase() === "coffee") return "tea";
+        return match;
+      });
+    } else if (productStr.includes("smoothie") && subject.includes("latte")) {
+      subject = subject.replace(/latte|coffee|espresso/gi, (match) => {
+        if (match.toLowerCase() === "latte") return "smoothie bowl";
+        if (match.toLowerCase() === "coffee") return "smoothie";
+        return match;
+      });
+    }
+  }
+
   const tone = toneFor(personalityList(biz));
   const audience = kbInfo.audience;
   const needsVideo = day.contentType === "Reel" || day.contentType === "Video Post";
+
+  // Customize photo instructions for non-coffee cafe businesses.
+  let photoInstructions = buildPhotoInstructions(special.shot);
+  if (biz.businessType === "cafe" && biz.products.length > 0) {
+    const productStr = biz.products.join(" ").toLowerCase();
+    if (productStr.includes("acai") && photoInstructions.includes("coffee")) {
+      photoInstructions = photoInstructions
+        .replace(/coffee|latte|espresso/gi, "acai bowl")
+        .replace(/beans|grounds/gi, "toppings")
+        .replace(/barista/gi, "staff");
+    }
+  }
+
   return {
     ...day,
     goal: special.goal,
     title: special.title,
     subject,
-    photoInstructions: buildPhotoInstructions(special.shot),
+    photoInstructions,
     videoScript: needsVideo
       ? buildReelScript(special.shot.theme, subject, biz, kbInfo, rng)
       : day.videoScript,
