@@ -188,25 +188,25 @@ async function runPlanPipeline(
       generateStrategyAI(profile, limits.marketingStrategy),
     ]);
 
-    if (research) {
-      profile.brandResearch = research;
-      await ctx.runMutation(internal.businesses.patchBrandResearch, {
-        businessId,
-        brandResearch: research,
-      });
-    }
-
-    await ctx.runMutation(internal.businesses.patchStrategy, { businessId, strategy });
-
-    // 3. The 30-day content plan (use fast deterministic engine for instant results).
+    // 3. Build content plan while saving research/strategy (parallel).
     const excludedIdeas = await ctx.runQuery(internal.businesses.getExcludedContentIdeas, {
       businessId,
     });
+
+    if (research) {
+      profile.brandResearch = research;
+    }
+
     const opts = { startDate: anchor, salt, strategyNote: strategyNote(strategy), excludedIdeas };
     const plans = buildCalendarFallback(profile, opts);
 
-    // Run all database updates in parallel.
+    // 4. Save everything to database in parallel (research, strategy, posts, plan metadata, usage).
     await Promise.all([
+      research ? ctx.runMutation(internal.businesses.patchBrandResearch, {
+        businessId,
+        brandResearch: research,
+      }) : Promise.resolve(),
+      ctx.runMutation(internal.businesses.patchStrategy, { businessId, strategy }),
       ctx.runMutation(internal.businesses.replacePosts, { businessId, plans }),
       ctx.runMutation(internal.businesses.finishPlan, {
         businessId,
