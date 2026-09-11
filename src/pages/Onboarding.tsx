@@ -182,7 +182,9 @@ interface MenuUploadFieldProps {
 function MenuUploadField({ value, onChange, placeholder }: MenuUploadFieldProps) {
   const analyzeMenu = useAction(api.ai.analyzeMenuForProducts);
   const [analyzing, setAnalyzing] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dragCounterRef = useRef(0);
 
   const handleAnalyzeText = async () => {
     if (!value.trim()) {
@@ -237,15 +239,70 @@ function MenuUploadField({ value, onChange, placeholder }: MenuUploadFieldProps)
     }
   };
 
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current++;
+    if (e.dataTransfer.items?.length) {
+      setIsDragging(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current--;
+    if (dragCounterRef.current === 0) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    dragCounterRef.current = 0;
+
+    const files = e.dataTransfer.files;
+    if (files?.length > 0) {
+      const file = files[0];
+      if (file.type.startsWith("image/")) {
+        handleFileUpload(file);
+      } else {
+        toast.error("Please drop an image file");
+      }
+    }
+  };
+
   return (
     <div className="space-y-3">
       <div className="flex gap-2">
-        <Textarea
-          className={`${areaClass} flex-1`}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-        />
+        <div
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+          className={`flex-1 rounded-xl transition-colors ${
+            isDragging
+              ? "bg-forest-50 ring-2 ring-forest-400"
+              : ""
+          }`}
+        >
+          <Textarea
+            className={`${areaClass} ${isDragging ? "bg-transparent" : ""}`}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={placeholder}
+            onDragEnter={handleDragEnter}
+            onDragLeave={handleDragLeave}
+            onDragOver={handleDragOver}
+          />
+        </div>
         <div className="flex flex-col gap-2">
           <button
             type="button"
