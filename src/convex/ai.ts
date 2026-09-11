@@ -302,6 +302,23 @@ export const generateRecommendations = action({
 });
 
 // ---------------------------------------------------------------------------
+// 9. Menu analysis (onboarding assistance)
+// ---------------------------------------------------------------------------
+
+import { analyzeMenuText } from "./lib/menuAnalysis";
+
+export const analyzeMenuForProducts = action({
+  args: { menuText: v.string() },
+  handler: async (ctx, { menuText }) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new Error("Not authenticated");
+
+    const result = await analyzeMenuText(menuText);
+    return result;
+  },
+});
+
+// ---------------------------------------------------------------------------
 // Background analysis after a plan is generated (no credits — included)
 // ---------------------------------------------------------------------------
 

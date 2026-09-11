@@ -27,6 +27,7 @@ import type * as lib_competitors from "../lib/competitors.js";
 import type * as lib_focus from "../lib/focus.js";
 import type * as lib_fx from "../lib/fx.js";
 import type * as lib_insights from "../lib/insights.js";
+import type * as lib_menuAnalysis from "../lib/menuAnalysis.js";
 import type * as lib_planGen from "../lib/planGen.js";
 import type * as lib_planLimits from "../lib/planLimits.js";
 import type * as lib_research from "../lib/research.js";
@@ -68,6 +69,7 @@ declare const fullApi: ApiFromModules<{
   "lib/focus": typeof lib_focus;
   "lib/fx": typeof lib_fx;
   "lib/insights": typeof lib_insights;
+  "lib/menuAnalysis": typeof lib_menuAnalysis;
   "lib/planGen": typeof lib_planGen;
   "lib/planLimits": typeof lib_planLimits;
   "lib/research": typeof lib_research;

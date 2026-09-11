@@ -11,7 +11,7 @@ import { BUSINESS_TYPES, GOALS } from "@/convex/lib/strategy";
 import { cn } from "@/lib/utils";
 import { usePageMeta } from "@/hooks/use-page-meta";
 import { useAction, useQuery } from "convex/react";
-import { AlertTriangle, ArrowLeft, ArrowRight, Check, Loader2, Sparkles } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowRight, Check, Loader2, Sparkles, Upload } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router";
 import { toast } from "sonner";
@@ -165,6 +165,79 @@ function Summary({ label, value }: { label: string; value: React.ReactNode }) {
     <div className="flex flex-col gap-0.5 border-b border-hairline py-3 last:border-0 sm:flex-row sm:gap-6">
       <p className="w-44 shrink-0 text-xs font-semibold uppercase tracking-wider text-secondary-text">{label}</p>
       <p className="text-sm text-ink">{value || <span className="text-secondary-text">—</span>}</p>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Menu upload component
+// ---------------------------------------------------------------------------
+
+interface MenuUploadFieldProps {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+}
+
+function MenuUploadField({ value, onChange, placeholder }: MenuUploadFieldProps) {
+  const analyzeMenu = useAction(api.ai.analyzeMenuForProducts);
+  const [analyzing, setAnalyzing] = useState(false);
+
+  const handleAnalyze = async () => {
+    if (!value.trim()) {
+      toast.error("Paste your menu text first");
+      return;
+    }
+
+    setAnalyzing(true);
+    try {
+      const result = await analyzeMenu({ menuText: value });
+      if (result.products.length > 0) {
+        const extractedText = result.products.join("\n");
+        onChange(extractedText);
+        toast.success(`✨ AI extracted ${result.products.length} products! Refine as needed.`);
+      } else {
+        toast.error("Couldn't extract products. Make sure you pasted menu content.");
+      }
+    } catch (err) {
+      toast.error("Analysis failed. Try refining your menu text.");
+      console.error(err);
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex gap-2">
+        <Textarea
+          className={`${areaClass} flex-1`}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+        />
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={handleAnalyze}
+            disabled={analyzing || !value.trim()}
+            className="flex h-20 w-20 flex-col items-center justify-center rounded-xl border-2 border-dashed border-hairline bg-sage/30 transition-colors hover:border-forest-400 hover:bg-sage disabled:opacity-50"
+            title="Analyze menu with AI"
+          >
+            {analyzing ? (
+              <Loader2 className="size-5 animate-spin text-forest-600" />
+            ) : (
+              <>
+                <Sparkles className="size-5 text-forest-600" />
+                <span className="text-xs font-semibold text-forest-700">Analyze</span>
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+      <p className="text-xs text-secondary-text">
+        Paste your menu text and click Analyze, or type products manually.
+      </p>
     </div>
   );
 }
@@ -650,13 +723,11 @@ export default function Onboarding() {
 
             {step === 3 && (
               <>
-                <Field label="What products or services do you offer?" hint="One per line or comma-separated.">
-                  <Textarea
-                    className={areaClass}
+                <Field label="What products or services do you offer?" hint="Type them or upload a menu photo to extract them automatically.">
+                  <MenuUploadField
                     value={form.products}
-                    onChange={(e) => set("products", e.target.value)}
+                    onChange={(v) => set("products", v)}
                     placeholder={"Signature lattes\nFresh pastries\nSingle-origin beans"}
-                    autoFocus
                   />
                 </Field>
                 <Field label="What makes your business different?" optional>
