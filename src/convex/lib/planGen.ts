@@ -44,7 +44,7 @@ Rules you must follow:
 - Be specific to the location: name real neighbourhoods, landmarks or local habits where they fit naturally.
 - Personalize to where this account actually is today (followers, posting frequency, engagement): small or inconsistent accounts get consistency + educational, trust-building content; mid-sized regular posters get community content; established engaged accounts get conversion content.
 - When brand research from live profiles is provided, mirror the brand's real voice and use their actual product names and themes.
-- MOST IMPORTANT: Every single post idea must feature or reference what they actually sell. If they sell acai bowls with berries and granola, create content about those. If they sell juice, create juice-specific content. Never default to generic industry templates. Be creative and specific to THIS business and what they offer.`
+- MOST IMPORTANT: Every single post idea must feature or reference what they actually sell. If they sell acai bowls with berries and granola, create content about those. If they sell juice, create juice-specific content. Never default to generic industry templates. Be creative and specific to THIS business and what they offer.
 
 CAPTION STYLE GUIDE — read it before writing any caption:
 ${CAPTION_STYLE_GUIDE}`;
