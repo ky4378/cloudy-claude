@@ -1179,12 +1179,38 @@ const buildDay = (
           : rng.pick(TIME_SLOTS.story);
 
   // Pick a shot theme from the type pool, then pad with generic themes.
-  const pool: { theme: string; subject: string; angle: string; setting: string; lighting: string; background: string; props: string; edit: string; kb: TypeKB }[] = [
+  let pool: { theme: string; subject: string; angle: string; setting: string; lighting: string; background: string; props: string; edit: string; kb: TypeKB }[] = [
     ...kbInfo.shots.map((s) => ({ ...s, kb: kbInfo })),
     ...BUSINESS_TYPES[BUSINESS_TYPES.length - 1].shots.map((s) => ({ ...s, kb: kbInfo })),
   ];
+
+  // For cafes: filter out coffee-specific shots if products are acai/smoothies/tea instead.
+  if (biz.businessType === "cafe" && biz.products.length > 0) {
+    const productStr = biz.products.join(" ").toLowerCase();
+    const isAcai = productStr.includes("acai") || productStr.includes("açai");
+    const isSmoothie = productStr.includes("smoothie");
+    const isTea = productStr.includes("tea");
+
+    if ((isAcai || isSmoothie || isTea) && productStr.includes("coffee")) {
+      // Mixed products—keep all shots
+    } else if (isAcai || isSmoothie || isTea) {
+      // Filter out coffee-centric shots for pure acai/smoothie/tea cafes
+      const coffeeShots = new Set([
+        "Signature drink spotlight",
+        "Latte art detail",
+        "Pastry + coffee pairing",
+        "Barista at work",
+        "Fresh beans close-up",
+        "Cold brew jug pour",
+        "Tasting flight board",
+        "Takeaway cups stacked",
+      ]);
+      pool = pool.filter((s) => !coffeeShots.has(s.theme));
+    }
+  }
+
   const shot = pool[dayIndex % pool.length];
-  const subject = shot.subject;
+  let subject = shot.subject;
 
   const title =
     dayIndex % 7 === 0
