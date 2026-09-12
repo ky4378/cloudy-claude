@@ -188,7 +188,7 @@ async function runPlanPipeline(
       generateStrategyAI(profile, limits.marketingStrategy),
     ]);
 
-    // 3. Build content plan while saving research/strategy (parallel).
+    // 3. Build content plan with AI (smart, personalized to products) while saving research/strategy.
     const excludedIdeas = await ctx.runQuery(internal.businesses.getExcludedContentIdeas, {
       businessId,
     });
@@ -198,7 +198,14 @@ async function runPlanPipeline(
     }
 
     const opts = { startDate: anchor, salt, strategyNote: strategyNote(strategy), excludedIdeas };
-    const plans = buildCalendarFallback(profile, opts);
+
+    // Try AI-powered generation first (uses products to understand real business).
+    // Falls back to deterministic if AI is unavailable.
+    let plans = await generateCalendarWithAI(profile, opts);
+    if (!plans) {
+      // Fallback to deterministic engine if AI fails
+      plans = buildCalendarFallback(profile, opts);
+    }
 
     // 4. Save everything to database in parallel (research, strategy, posts, plan metadata, usage).
     await Promise.all([
