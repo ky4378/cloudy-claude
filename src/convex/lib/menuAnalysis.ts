@@ -90,19 +90,25 @@ export async function analyzeMenuImage(imageBase64: string): Promise<MenuAnalysi
                 },
                 {
                   type: "text",
-                  text: `Analyze this menu image and extract ALL products, dishes, and beverages you can see.
+                  text: `Analyze this menu image and extract PRIMARY MENU ITEMS ONLY (not ingredients or modifications).
+
+Understand menu structure:
+- MAIN ITEMS: Titled dishes/bowls with their own descriptions (EXTRACT THESE)
+- INGREDIENTS: Items listed below a main item as customization options (SKIP THESE)
+- BASE OPTIONS: Drizzles, sauces, toppings as add-ons (SKIP THESE)
 
 Return ONLY valid JSON with no markdown, code blocks, or extra text:
 {
-  "products": ["item1", "item2", ...],
+  "products": ["Main Item 1", "Main Item 2", ...],
   "highlights": "1-2 sentence summary"
 }
 
 Rules:
-- Extract 5-20 visible items
-- Include appetizers, mains, sides, desserts, beverages, etc.
-- Be specific: "Penne Carbonara" not just "Pasta"
-- Skip generic items like "water" or "napkins" unless specialty
+- Extract ONLY primary menu items (usually 5-15 items)
+- Each item must be a titled dish, NOT an ingredient
+- Example: Extract "Acai Bowl with Granola" NOT "Granola" alone
+- Skip ingredient lists, toppings, drizzles, and modifications
+- Be specific with item names
 - highlights: what makes this menu unique`,
                 },
               ],
