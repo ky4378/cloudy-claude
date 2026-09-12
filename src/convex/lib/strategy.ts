@@ -1184,17 +1184,22 @@ const buildDay = (
     ...BUSINESS_TYPES[BUSINESS_TYPES.length - 1].shots.map((s) => ({ ...s, kb: kbInfo })),
   ];
 
-  // For cafes: filter out coffee-specific shots if products are acai/smoothies/tea instead.
+  // For cafes: filter out coffee-specific shots if business doesn't sell coffee.
+  // This works for ANY non-coffee cafe (acai, bubble tea, matcha, juice bars, smoothie bowls, etc).
   if (biz.businessType === "cafe" && biz.products.length > 0) {
     const productStr = biz.products.join(" ").toLowerCase();
-    const isAcai = productStr.includes("acai") || productStr.includes("açai");
-    const isSmoothie = productStr.includes("smoothie");
-    const isTea = productStr.includes("tea");
+    const hasCoffee =
+      productStr.includes("coffee") ||
+      productStr.includes("latte") ||
+      productStr.includes("espresso") ||
+      productStr.includes("cappuccino") ||
+      productStr.includes("americano") ||
+      productStr.includes("mocha") ||
+      productStr.includes("macchiato");
 
-    if ((isAcai || isSmoothie || isTea) && productStr.includes("coffee")) {
-      // Mixed products—keep all shots
-    } else if (isAcai || isSmoothie || isTea) {
-      // Filter out coffee-centric shots for pure acai/smoothie/tea cafes
+    // If products don't mention any coffee keywords, filter out coffee-centric shots.
+    // This automatically handles acai bowls, bubble tea, matcha, juice bars, smoothies, etc.
+    if (!hasCoffee) {
       const coffeeShots = new Set([
         "Signature drink spotlight",
         "Latte art detail",
