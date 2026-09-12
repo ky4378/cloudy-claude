@@ -20,31 +20,31 @@ const insertPosts = async (
   businessId: Id<"businesses">,
   plans: DayPlan[],
 ) => {
-  await Promise.all(
-    plans.map((plan) =>
-      ctx.db.insert("posts", {
-        businessId,
-        dayIndex: plan.dayIndex,
-        date: plan.date,
-        platform: plan.platform,
-        contentType: plan.contentType,
-        goal: plan.goal,
-        time: plan.time || undefined,
-        title: plan.title,
-        subject: plan.subject,
-        hook: plan.hook,
-        photoInstructions: plan.photoInstructions,
-        videoScript: plan.videoScript,
-        captionShort: plan.captionShort,
-        captionLong: plan.captionLong,
-        cta: plan.cta,
-        hashtagGroups: plan.hashtagGroups,
-        storyIdeas: plan.storyIdeas,
-        status: "planned",
-        createdAt: Date.now(),
-      }),
-    ),
-  );
+  // Insert posts sequentially to avoid Convex transaction issues with large batches.
+  // Parallel insertion was causing action timeouts. Sequential is reliable.
+  for (const plan of plans) {
+    await ctx.db.insert("posts", {
+      businessId,
+      dayIndex: plan.dayIndex,
+      date: plan.date,
+      platform: plan.platform,
+      contentType: plan.contentType,
+      goal: plan.goal,
+      time: plan.time || undefined,
+      title: plan.title,
+      subject: plan.subject,
+      hook: plan.hook,
+      photoInstructions: plan.photoInstructions,
+      videoScript: plan.videoScript,
+      captionShort: plan.captionShort,
+      captionLong: plan.captionLong,
+      cta: plan.cta,
+      hashtagGroups: plan.hashtagGroups,
+      storyIdeas: plan.storyIdeas,
+      status: "planned",
+      createdAt: Date.now(),
+    });
+  }
 };
 
 export const myBusiness = query({
