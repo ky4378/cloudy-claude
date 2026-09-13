@@ -579,14 +579,14 @@ export default function Onboarding() {
     setError(null);
     try {
       setGenerating(true);
-      // Persist form data to sessionStorage in case of page reload during checkout
+      // Save form data to database before Stripe checkout
       if (pendingFormData.current) {
-        sessionStorage.setItem("cloudy_pending_form_data", JSON.stringify(pendingFormData.current));
+        await saveBusiness({ ...pendingFormData.current, generatePlan: false });
       }
       const result = await createCheckout({
         plan,
         origin: window.location.origin,
-        redirectTo: `/onboarding`,
+        redirectTo: `/dashboard`,
       });
       if (result.url) {
         setCheckoutUrl(result.url);
