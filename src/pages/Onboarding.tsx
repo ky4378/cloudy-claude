@@ -586,7 +586,7 @@ export default function Onboarding() {
       const result = await createCheckout({
         plan,
         origin: window.location.origin,
-        redirectTo: `/dashboard`,
+        redirectTo: `/onboarding`,
       });
       if (result.url) {
         setCheckoutUrl(result.url);
