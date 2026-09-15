@@ -492,6 +492,13 @@ export const processWebhook = action({
               session.subscription as string,
             )) as unknown as SubscriptionSnapshot;
             await syncSubscription(ctx, sub);
+            // After payment completes, immediately mark subscription as active
+            // (even if Stripe still shows incomplete, payment already succeeded)
+            const customerId = sub.customer as string;
+            await ctx.runMutation(internal.billing.upsertSubscriptionByCustomer, {
+              customerId,
+              data: { status: "active" },
+            });
           }
           break;
         }
