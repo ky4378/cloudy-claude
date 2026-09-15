@@ -303,7 +303,6 @@ export const canUseFeature = internalQuery({
   handler: async (ctx, { userId, feature, units }) => {
     const sub = await subscriptionFor(ctx, userId);
     const n = Math.max(1, units ?? 1);
-    console.log("[canUseFeature]", { feature, userId, subExists: !!sub, subStatus: sub?.status });
     if (!sub) {
       if (freeTrialEnabled()) return { ok: true as const };
       return {
@@ -313,7 +312,6 @@ export const canUseFeature = internalQuery({
       };
     }
     if (!isLive(sub)) {
-      console.log("[canUseFeature] Subscription not live:", sub.status);
       return {
         ok: false as const,
         code: "inactive" as const,
