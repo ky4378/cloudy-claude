@@ -429,64 +429,54 @@ export default function Onboarding() {
     });
   };
 
-  // Handle checkout completion
-  const checkoutProcessed = useRef(false);
+  // Handle post-payment auto-generation
+  const autoGenProcessed = useRef(false);
   useEffect(() => {
-    // Check URL directly to ensure we catch the checkout=success parameter
-    const urlParams = new URLSearchParams(window.location.search);
-    const checkoutCompleted = urlParams.get("checkout") === "success";
-    const sessionId = urlParams.get("session_id");
+    // If user just got a subscription (via Stripe webhook), auto-generate plan
+    if (autoGenProcessed.current || !usage || !myBusiness) return;
+    if (!usage.hasSubscription || myBusiness.posts.length > 0) return; // Already has subscription or plan exists
 
-    // Restore form data from sessionStorage if needed (page reload during checkout)
-    if (!pendingFormData.current) {
-      const stored = sessionStorage.getItem("cloudy_pending_form_data");
-      if (stored) {
-        try {
-          pendingFormData.current = JSON.parse(stored);
-        } catch {
-          /* ignore parse errors */
-        }
-      }
-    }
+    // Save form data and auto-trigger generation
+    const formData = myBusiness.business;
+    if (!formData) return;
 
-    // Skip if already processed, missing required data, or no pending form
-    if (checkoutProcessed.current || !checkoutCompleted || !sessionId || !pendingFormData.current) return;
-
-    // Mark as processed to avoid duplicate calls
-    checkoutProcessed.current = true;
-
-    // User returned from Stripe checkout - verify payment and proceed with generation
-    let isMounted = true;
+    autoGenProcessed.current = true;
+    setGenerating(true);
 
     (async () => {
       try {
-        setCheckoutUrl(null);
-        setGenerating(true);
-
-        const result = await verifyCheckout({ sessionId });
-        if (!isMounted) return;
-
-        if (!result.ok || !result.paid) {
-          checkoutProcessed.current = false; // Allow retry
-          throw new Error("Payment verification failed. Please try again or contact support.");
-        }
-
-        // Payment was successful - proceed with plan generation
-        await proceedWithGeneration(pendingFormData.current!);
+        await saveBusiness({
+          businessName: formData.businessName,
+          businessType: formData.businessType,
+          location: formData.location,
+          website: formData.website,
+          instagram: formData.instagram,
+          targetCustomers: formData.targetCustomers,
+          mainGoal: formData.mainGoal,
+          goals: formData.goals,
+          igFollowers: formData.igFollowers,
+          postingFrequency: formData.postingFrequency,
+          engagement: formData.engagement,
+          products: formData.products,
+          differentiator: formData.differentiator,
+          tone: formData.tone,
+          brandPersonality: formData.brandPersonality,
+          contentLikes: formData.contentLikes,
+          contentDislikes: formData.contentDislikes,
+          competitors: formData.competitors,
+          challenges: formData.challenges,
+          accentColor: formData.accentColor,
+        });
+        navigate("/dashboard?welcome=1", { replace: true });
       } catch (e) {
-        if (!isMounted) return;
-        const message = e instanceof Error ? e.message : "Failed to process your payment. Please contact support.";
+        const message = e instanceof Error ? e.message : "Failed to generate your plan. Please try again.";
         setError(message);
         toast.error(message);
         setGenerating(false);
-        submitting.current = false;
+        autoGenProcessed.current = false;
       }
     })();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [params, verifyCheckout]);
+  }, [usage, myBusiness, saveBusiness, navigate]);
 
   // Prefill from a saved business (returning users / edit mode).
   useEffect(() => {
