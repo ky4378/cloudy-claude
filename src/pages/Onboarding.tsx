@@ -438,7 +438,8 @@ export default function Onboarding() {
     if (autoGenProcessed.current || !myBusiness) return;
 
     const hasSubscription = usage?.hasSubscription ?? false;
-    const shouldAutoGen = (checkoutSuccess || hasSubscription) && myBusiness.posts.length === 0 && myBusiness.business;
+    // On checkout success, always regenerate. For subscription sync, only generate if no posts exist yet.
+    const shouldAutoGen = myBusiness.business && (checkoutSuccess || (hasSubscription && myBusiness.posts.length === 0));
 
     if (!shouldAutoGen) return;
 
