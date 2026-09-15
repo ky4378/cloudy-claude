@@ -161,10 +161,12 @@ async function runPlanPipeline(
   userId: Id<"users">,
   business: Doc<"businesses">,
 ): Promise<void> {
+  console.log("[Plan Pipeline] Starting for business:", business.businessName);
   const featCheck = await ctx.runQuery(internal.billing.canUseFeature, {
     userId,
     feature: "plans",
   });
+  console.log("[Plan Pipeline] Feature check:", featCheck);
   if (!featCheck.ok) throw new Error(featCheck.reason);
 
   const businessId = business._id;
@@ -180,6 +182,7 @@ async function runPlanPipeline(
     const profile = toProfile(business);
 
     // 1 & 2. Run brand research and strategy generation in parallel.
+    console.log("[Plan Pipeline] Starting research and strategy...");
     const [research, strategy] = await Promise.all([
       researchProfiles(
         { instagram: business.instagram },
@@ -187,6 +190,7 @@ async function runPlanPipeline(
       ),
       generateStrategyAI(profile, limits.marketingStrategy),
     ]);
+    console.log("[Plan Pipeline] Research and strategy complete");
 
     // 3. Build content plan with AI (smart, personalized to products) while saving research/strategy.
     const excludedIdeas = await ctx.runQuery(internal.businesses.getExcludedContentIdeas, {
@@ -231,10 +235,12 @@ async function runPlanPipeline(
     ctx.scheduler.runAfter(0, internal.ai.postPlanAnalysis, { businessId });
 
   } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    console.error("[Plan Generation Error]", errorMsg, error);
     await ctx.runMutation(internal.businesses.setPlanStatus, {
       businessId,
       status: "error",
-      error: error instanceof Error ? error.message : "Plan generation failed.",
+      error: errorMsg,
     });
     throw error;
   }
