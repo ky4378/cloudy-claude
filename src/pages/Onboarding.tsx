@@ -431,32 +431,18 @@ export default function Onboarding() {
 
   // Handle post-payment auto-generation
   const autoGenProcessed = useRef(false);
+  const checkoutSuccess = params.get("checkout") === "success";
+
   useEffect(() => {
-    // If user just got a subscription (via Stripe webhook), auto-generate plan
-    if (autoGenProcessed.current || !usage || !myBusiness) {
-      console.log("[AutoGen Debug] Early return:", { autoGenProcessed: autoGenProcessed.current, usage: !!usage, myBusiness: !!myBusiness });
-      return;
-    }
+    // Trigger auto-generation if user just completed payment (checkout=success) OR has a synced subscription
+    if (autoGenProcessed.current || !myBusiness) return;
 
-    console.log("[AutoGen Debug] Checking conditions:", {
-      hasSubscription: usage.hasSubscription,
-      postsLength: myBusiness.posts.length,
-      business: !!myBusiness.business
-    });
+    const hasSubscription = usage?.hasSubscription ?? false;
+    const shouldAutoGen = (checkoutSuccess || hasSubscription) && myBusiness.posts.length === 0 && myBusiness.business;
 
-    if (!usage.hasSubscription || myBusiness.posts.length > 0) {
-      console.log("[AutoGen Debug] Skipping: no subscription or already has posts");
-      return;
-    }
+    if (!shouldAutoGen) return;
 
-    // Save form data and auto-trigger generation
     const formData = myBusiness.business;
-    if (!formData) {
-      console.log("[AutoGen Debug] No formData found");
-      return;
-    }
-
-    console.log("[AutoGen Debug] Triggering auto-generation with data:", { businessName: formData.businessName });
     autoGenProcessed.current = true;
     setGenerating(true);
 
@@ -484,18 +470,16 @@ export default function Onboarding() {
           challenges: formData.challenges,
           accentColor: formData.accentColor,
         });
-        console.log("[AutoGen Debug] Plan generated successfully, navigating to dashboard");
         navigate("/dashboard?welcome=1", { replace: true });
       } catch (e) {
         const message = e instanceof Error ? e.message : "Failed to generate your plan. Please try again.";
-        console.log("[AutoGen Debug] Error:", message);
         setError(message);
         toast.error(message);
         setGenerating(false);
         autoGenProcessed.current = false;
       }
     })();
-  }, [usage, myBusiness, saveBusiness, navigate]);
+  }, [checkoutSuccess, myBusiness, saveBusiness, navigate]);
 
   // Prefill from a saved business (returning users / edit mode).
   useEffect(() => {
