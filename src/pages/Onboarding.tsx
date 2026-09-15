@@ -435,17 +435,23 @@ export default function Onboarding() {
 
   useEffect(() => {
     // Trigger auto-generation if user just completed payment (checkout=success) OR has a synced subscription
-    if (autoGenProcessed.current || !myBusiness) return;
+    if (autoGenProcessed.current || !myBusiness) {
+      console.log("[AutoGen] Early exit:", { processed: autoGenProcessed.current, hasBusiness: !!myBusiness });
+      return;
+    }
 
     const hasSubscription = usage?.hasSubscription ?? false;
     // On checkout success, always regenerate. For subscription sync, only generate if no posts exist yet.
     const shouldAutoGen = myBusiness.business && (checkoutSuccess || (hasSubscription && myBusiness.posts.length === 0));
+
+    console.log("[AutoGen] Conditions:", { checkoutSuccess, hasSubscription, hasBusiness: !!myBusiness.business, postsLength: myBusiness.posts.length, shouldAutoGen });
 
     if (!shouldAutoGen) return;
 
     const formData = myBusiness.business;
     autoGenProcessed.current = true;
     setGenerating(true);
+    console.log("[AutoGen] Starting generation");
 
     (async () => {
       try {
@@ -471,9 +477,11 @@ export default function Onboarding() {
           challenges: formData.challenges,
           accentColor: formData.accentColor,
         });
+        console.log("[AutoGen] Success, navigating to dashboard");
         navigate("/dashboard?welcome=1", { replace: true });
       } catch (e) {
         const message = e instanceof Error ? e.message : "Failed to generate your plan. Please try again.";
+        console.log("[AutoGen] Error:", message, e);
         setError(message);
         toast.error(message);
         setGenerating(false);
