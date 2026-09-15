@@ -433,13 +433,30 @@ export default function Onboarding() {
   const autoGenProcessed = useRef(false);
   useEffect(() => {
     // If user just got a subscription (via Stripe webhook), auto-generate plan
-    if (autoGenProcessed.current || !usage || !myBusiness) return;
-    if (!usage.hasSubscription || myBusiness.posts.length > 0) return; // Already has subscription or plan exists
+    if (autoGenProcessed.current || !usage || !myBusiness) {
+      console.log("[AutoGen Debug] Early return:", { autoGenProcessed: autoGenProcessed.current, usage: !!usage, myBusiness: !!myBusiness });
+      return;
+    }
+
+    console.log("[AutoGen Debug] Checking conditions:", {
+      hasSubscription: usage.hasSubscription,
+      postsLength: myBusiness.posts.length,
+      business: !!myBusiness.business
+    });
+
+    if (!usage.hasSubscription || myBusiness.posts.length > 0) {
+      console.log("[AutoGen Debug] Skipping: no subscription or already has posts");
+      return;
+    }
 
     // Save form data and auto-trigger generation
     const formData = myBusiness.business;
-    if (!formData) return;
+    if (!formData) {
+      console.log("[AutoGen Debug] No formData found");
+      return;
+    }
 
+    console.log("[AutoGen Debug] Triggering auto-generation with data:", { businessName: formData.businessName });
     autoGenProcessed.current = true;
     setGenerating(true);
 
@@ -467,9 +484,11 @@ export default function Onboarding() {
           challenges: formData.challenges,
           accentColor: formData.accentColor,
         });
+        console.log("[AutoGen Debug] Plan generated successfully, navigating to dashboard");
         navigate("/dashboard?welcome=1", { replace: true });
       } catch (e) {
         const message = e instanceof Error ? e.message : "Failed to generate your plan. Please try again.";
+        console.log("[AutoGen Debug] Error:", message);
         setError(message);
         toast.error(message);
         setGenerating(false);
