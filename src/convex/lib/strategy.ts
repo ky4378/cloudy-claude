@@ -107,6 +107,101 @@ export interface DayPlan {
 const richSeed = (biz: BusinessProfile, dayIndex: number, salt: number): string =>
   `${biz.businessName}|${biz.location}|${biz.igFollowers ?? ""}|${biz.postingFrequency ?? ""}|${biz.engagement ?? ""}|${strategyFocus(biz)}|${dayIndex}|${salt}`;
 
+/**
+ * Apply product-based customization to any day (AI or deterministic).
+ * Maps generic industry keywords to actual business products.
+ */
+const customizeForProducts = (
+  day: DayPlan,
+  biz: BusinessProfile,
+): DayPlan => {
+  if (!biz.products.length) return day;
+
+  const productStr = biz.products.join(" ").toLowerCase();
+  let modified: DayPlan = { ...day };
+
+  // Acai/bowl cafe customization
+  if ((productStr.includes("acai") || productStr.includes("açai")) && biz.businessType === "cafe") {
+    const coffeePattern = /coffee|latte|espresso|cappuccino|macchiato|americano|flat white|pour over|cold brew|iced coffee/gi;
+    modified = {
+      ...modified,
+      title: day.title.replace(coffeePattern, "acai bowl"),
+      subject: day.subject.replace(coffeePattern, (match) => {
+        const m = match.toLowerCase();
+        if (m.includes("latte") || m.includes("cappuccino") || m.includes("macchiato")) return "acai bowl";
+        if (m.includes("coffee") || m.includes("espresso") || m.includes("pour") || m.includes("cold") || m.includes("iced")) return "acai";
+        if (m.includes("flat white")) return "acai bowl";
+        return match;
+      }),
+      photoInstructions: day.photoInstructions
+        .replace(coffeePattern, "acai bowl")
+        .replace(/beans|grounds|grind/gi, "toppings")
+        .replace(/barista/gi, "staff")
+        .replace(/espresso machine|coffee machine|grinder/gi, "blender"),
+      captionShort: day.captionShort.replace(coffeePattern, "acai bowl"),
+      captionLong: day.captionLong.replace(coffeePattern, "acai bowl"),
+      videoScript: day.videoScript
+        ? {
+            ...day.videoScript,
+            scenes: day.videoScript.scenes.map(s => s.replace(coffeePattern, "acai bowl")),
+          }
+        : day.videoScript,
+    };
+  }
+  // Tea cafe customization
+  else if (productStr.includes("tea") && biz.businessType === "cafe") {
+    const coffeePattern = /coffee|latte|espresso|cappuccino|macchiato|americano|flat white|pour over|cold brew|iced coffee/gi;
+    modified = {
+      ...modified,
+      title: day.title.replace(coffeePattern, "tea"),
+      subject: day.subject.replace(coffeePattern, (match) => {
+        const m = match.toLowerCase();
+        if (m.includes("latte") || m.includes("cappuccino")) return "signature tea";
+        return "tea";
+      }),
+      photoInstructions: day.photoInstructions
+        .replace(coffeePattern, "tea")
+        .replace(/beans|grounds|grind/gi, "leaves")
+        .replace(/espresso machine|coffee machine|grinder/gi, "infuser"),
+      captionShort: day.captionShort.replace(coffeePattern, "tea"),
+      captionLong: day.captionLong.replace(coffeePattern, "tea"),
+      videoScript: day.videoScript
+        ? {
+            ...day.videoScript,
+            scenes: day.videoScript.scenes.map(s => s.replace(coffeePattern, "tea")),
+          }
+        : day.videoScript,
+    };
+  }
+  // Smoothie/bowl cafe customization
+  else if ((productStr.includes("smoothie") || productStr.includes("juice")) && biz.businessType === "cafe") {
+    const coffeePattern = /coffee|latte|espresso|cappuccino|macchiato|americano|flat white|pour over|cold brew|iced coffee/gi;
+    modified = {
+      ...modified,
+      title: day.title.replace(coffeePattern, "smoothie"),
+      subject: day.subject.replace(coffeePattern, (match) => {
+        const m = match.toLowerCase();
+        if (m.includes("latte") || m.includes("cappuccino")) return "smoothie bowl";
+        return "smoothie";
+      }),
+      photoInstructions: day.photoInstructions
+        .replace(coffeePattern, "smoothie bowl")
+        .replace(/beans|grounds|grind/gi, "fruits and toppings")
+        .replace(/espresso machine|coffee machine|grinder/gi, "blender"),
+      captionShort: day.captionShort.replace(coffeePattern, "smoothie"),
+      captionLong: day.captionLong.replace(coffeePattern, "smoothie"),
+      videoScript: day.videoScript
+        ? {
+            ...day.videoScript,
+            scenes: day.videoScript.scenes.map(s => s.replace(coffeePattern, "smoothie")),
+          }
+        : day.videoScript,
+    };
+  }
+
+  return modified;
+};
+
 const applyFocusDay = (
   day: DayPlan,
   special: { shot: Shot; title: string; goal: string },
@@ -188,7 +283,9 @@ export const buildCalendarPersonalized = (
     const rng = makeRng(hashString(richSeed(biz, dayIndex, salt)));
     const special = focusTheme(dayIndex, focus, kbInfo, biz, rng);
     const built = special ? applyFocusDay(day, special, biz, kbInfo, rng) : day;
-    return withHook(built, biz, rng);
+    // Apply product customization to ALL days (not just focus days) to ensure consistency
+    const customized = customizeForProducts(built, biz);
+    return withHook(customized, biz, rng);
   });
 };
 

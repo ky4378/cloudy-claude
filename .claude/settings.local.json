@@ -28,7 +28,9 @@
       "Bash(npm run *)",
       "Bash(git commit -m 'Implement unique content per business type with trend detection *)",
       "Bash(git commit -m 'Add live Instagram/TikTok trend integration to content plans *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(CONVEX_DEPLOYMENT=dazzling-pigeon-289 npx convex deploy)",
+      "Bash(vercel --version)"
     ]
   }
 }

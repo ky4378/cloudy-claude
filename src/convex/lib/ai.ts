@@ -162,7 +162,12 @@ export function businessContext(p: BusinessProfile): string {
     p.engagement && ENGAGEMENT_LABEL[p.engagement],
   ].filter(Boolean);
   if (social.length) lines.push(`Current social media: ${social.join("; ")}`);
-  if (p.products.length) lines.push(`Products / services: ${p.products.join(", ")}`);
+
+  // CRITICAL: Products/services come EARLY and are emphasized strongly
+  if (p.products.length) {
+    lines.push(`\n⭐ ACTUAL PRODUCTS/SERVICES (Priority #1 — all content must feature these):\n${p.products.map(p => `  • ${p}`).join("\n")}`);
+  }
+
   if (p.differentiator) lines.push(`What makes them different: ${p.differentiator}`);
   lines.push(
     `Preferred brand tone: ${p.tone ?? p.brandPersonality[0] ?? "Friendly"}${
