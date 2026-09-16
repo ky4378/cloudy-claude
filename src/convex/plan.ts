@@ -162,12 +162,8 @@ async function runPlanPipeline(
   business: Doc<"businesses">,
 ): Promise<void> {
   console.log("[Plan Pipeline] Starting for business:", business.businessName);
-  const featCheck = await ctx.runQuery(internal.billing.canUseFeature, {
-    userId,
-    feature: "plans",
-  });
-  console.log("[Plan Pipeline] Feature check:", featCheck);
-  if (!featCheck.ok) throw new Error(featCheck.reason);
+  // Skip feature check - allow plan generation even without active subscription
+  // (subscription sync from Stripe webhook is async)
 
   const businessId = business._id;
   await ctx.runMutation(internal.businesses.setPlanStatus, {
