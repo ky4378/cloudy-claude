@@ -1283,22 +1283,20 @@ const buildDay = (
 
   // For cafes: build product-specific shots, not filtered coffee shots.
   // If it's an acai shop, use acai shots. If it's a smoothie bar, use smoothie shots, etc.
-  if (biz.businessType === "cafe" && biz.products.length > 0) {
-    const productStr = biz.products.join(" ").toLowerCase();
+  if (biz.businessType === "cafe" && biz.products && biz.products.length > 0) {
+    const productStr = (biz.products || []).join(" ").toLowerCase();
 
     // Check what the business actually sells
     const isAcai =
       productStr.includes("acai") || productStr.includes("açai");
     const isSmoothie =
       productStr.includes("smoothie") ||
-      productStr.includes("bowl") && !productStr.includes("coffee");
+      (productStr.includes("bowl") && !productStr.includes("coffee"));
     const isJuice =
       productStr.includes("juice") &&
       !productStr.includes("coffee");
     const isTea =
       productStr.includes("tea") || productStr.includes("matcha");
-    const isBubble =
-      productStr.includes("bubble") || productStr.includes("boba");
 
     // Replace entire pool with product-specific shots
     let productShots: typeof pool = [];
