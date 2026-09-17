@@ -236,7 +236,7 @@ export default function Billing() {
 
       {/* Main content */}
       <main className="px-4 pt-24 pb-16 lg:pl-[330px] lg:pr-6 lg:pt-10">
-        <div className="mx-auto flex max-w-4xl flex-col gap-5">
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-8">
           <div className="flex items-center gap-3">
             <div className="flex size-11 items-center justify-center rounded-2xl bg-forest-600 text-white shadow-sm">
               <CreditCard className="size-5" />
@@ -253,7 +253,7 @@ export default function Billing() {
           </div>
 
           {/* Plan cards - always show for upgrade options */}
-          <div className="grid gap-5 md:grid-cols-3">
+          <div className="grid gap-6 lg:grid-cols-3 grid-cols-1">
             {PLANS.map((p) => {
               const isCurrentPlan = sub?.plan === p.id;
               const planIndex = PLAN_ORDER.indexOf(p.id);
@@ -264,7 +264,7 @@ export default function Billing() {
               return (
                 <div
                   key={p.id}
-                  className={`relative flex flex-col rounded-3xl p-6 min-h-[600px] ${
+                  className={`relative flex flex-col rounded-3xl p-8 min-h-[650px] ${
                     p.popular ? "glass-panel ring-2 ring-ink" : "glass-panel-soft"
                   }`}
                 >
