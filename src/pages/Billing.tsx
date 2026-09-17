@@ -264,7 +264,7 @@ export default function Billing() {
               return (
                 <div
                   key={p.id}
-                  className={`relative flex flex-col rounded-3xl p-6 ${
+                  className={`relative flex flex-col rounded-3xl p-6 min-h-[600px] ${
                     p.popular ? "glass-panel ring-2 ring-ink" : "glass-panel-soft"
                   }`}
                 >
@@ -288,11 +288,11 @@ export default function Billing() {
                   </div>
 
                   {/* Plan highlights */}
-                  <div className="mt-5 flex flex-1 flex-col gap-2">
+                  <div className="mt-5 flex flex-1 flex-col gap-3">
                     {PLAN_HIGHLIGHTS[p.id].map((highlight) => (
                       <div key={highlight} className="flex items-start gap-2">
-                        <Check className="mt-0.5 size-4 shrink-0 text-forest-600" />
-                        <span className="text-sm text-[#6e6a60]">{highlight}</span>
+                        <Check className="mt-0.5 size-4 shrink-0 text-forest-600 flex-shrink-0" />
+                        <span className="text-sm leading-relaxed text-[#6e6a60]">{highlight}</span>
                       </div>
                     ))}
                   </div>
