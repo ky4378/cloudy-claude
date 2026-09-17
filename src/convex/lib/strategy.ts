@@ -1281,22 +1281,143 @@ const buildDay = (
     ...BUSINESS_TYPES[BUSINESS_TYPES.length - 1].shots.map((s) => ({ ...s, kb: kbInfo })),
   ];
 
-  // For cafes: filter out coffee-specific shots if business doesn't sell coffee.
-  // This works for ANY non-coffee cafe (acai, bubble tea, matcha, juice bars, smoothie bowls, etc).
+  // For cafes: build product-specific shots, not filtered coffee shots.
+  // If it's an acai shop, use acai shots. If it's a smoothie bar, use smoothie shots, etc.
   if (biz.businessType === "cafe" && biz.products.length > 0) {
     const productStr = biz.products.join(" ").toLowerCase();
-    const hasCoffee =
-      productStr.includes("coffee") ||
-      productStr.includes("latte") ||
-      productStr.includes("espresso") ||
-      productStr.includes("cappuccino") ||
-      productStr.includes("americano") ||
-      productStr.includes("mocha") ||
-      productStr.includes("macchiato");
 
-    // If products don't mention any coffee keywords, filter out coffee-centric shots.
-    // This automatically handles acai bowls, bubble tea, matcha, juice bars, smoothies, etc.
-    if (!hasCoffee) {
+    // Check what the business actually sells
+    const isAcai =
+      productStr.includes("acai") || productStr.includes("açai");
+    const isSmoothie =
+      productStr.includes("smoothie") ||
+      productStr.includes("bowl") && !productStr.includes("coffee");
+    const isJuice =
+      productStr.includes("juice") &&
+      !productStr.includes("coffee");
+    const isTea =
+      productStr.includes("tea") || productStr.includes("matcha");
+    const isBubble =
+      productStr.includes("bubble") || productStr.includes("boba");
+
+    // Replace entire pool with product-specific shots
+    let productShots: typeof pool = [];
+
+    if (isAcai) {
+      productShots = [
+        {
+          theme: "Acai bowl assembly",
+          subject: "acai bowl being layered with toppings",
+          angle: "overhead close-up",
+          setting: "at the counter",
+          lighting: "bright natural light",
+          background: "counter with fresh toppings",
+          props: "acai base, berries, granola, coconut",
+          edit: "vibrant colors, crisp details",
+          kb: kbInfo,
+        },
+        {
+          theme: "Topping showcase",
+          subject: "array of colorful toppings",
+          angle: "flat lay",
+          setting: "on the counter",
+          lighting: "bright daylight",
+          background: "white or wood surface",
+          props: "berries, granola, nuts, coconut, honey",
+          edit: "saturated, appetizing colors",
+          kb: kbInfo,
+        },
+        {
+          theme: "Customer with bowl",
+          subject: "customer enjoying their acai bowl",
+          angle: "mid shot",
+          setting: "seating area or cafe interior",
+          lighting: "natural window light",
+          background: "cozy cafe setting",
+          props: "spoon, colorful bowl, napkin",
+          edit: "warm, inviting mood",
+          kb: kbInfo,
+        },
+        {
+          theme: "Custom combination",
+          subject: "unique acai bowl flavor combo",
+          angle: "45° close-up",
+          setting: "on serving board",
+          lighting: "diffused daylight",
+          background: "blurred cafe background",
+          props: "decorated bowl with signature toppings",
+          edit: "highlight textures and colors",
+          kb: kbInfo,
+        },
+        {
+          theme: "Seasonal special",
+          subject: "limited edition seasonal bowl",
+          angle: "overhead",
+          setting: "display counter",
+          lighting: "even bright light",
+          background: "menu board or signage",
+          props: "bowl with seasonal ingredients",
+          edit: "clean, professional food photography",
+          kb: kbInfo,
+        },
+      ];
+    } else if (isSmoothie) {
+      productShots = [
+        {
+          theme: "Smoothie pour",
+          subject: "smoothie being poured into bowl",
+          angle: "side close-up",
+          setting: "at counter",
+          lighting: "bright daylight",
+          background: "blender and toppings",
+          props: "blender, bowl, ladle",
+          edit: "capture motion, vibrant colors",
+          kb: kbInfo,
+        },
+        {
+          theme: "Bowl with toppings",
+          subject: "finished smoothie bowl with toppings",
+          angle: "overhead",
+          setting: "table or counter",
+          lighting: "natural light",
+          background: "clean surface",
+          props: "granola, fruit, nuts, coconut",
+          edit: "appetizing, colorful",
+          kb: kbInfo,
+        },
+      ];
+    } else if (isJuice || isTea) {
+      productShots = [
+        {
+          theme: "Fresh pour",
+          subject: `fresh ${isJuice ? "juice" : "tea"} being poured`,
+          angle: "side close-up",
+          setting: "at counter",
+          lighting: "bright natural light",
+          background: "blurred counter",
+          props: "glass, pitcher, fresh ingredients",
+          edit: "highlight the liquid and light",
+          kb: kbInfo,
+        },
+        {
+          theme: "Glass showcase",
+          subject: `signature ${isJuice ? "juice" : "tea"}`,
+          angle: "front close-up",
+          setting: "on counter or table",
+          lighting: "backlit or side-lit",
+          background: "fresh ingredients or counter",
+          props: "elegant glass, garnish if applicable",
+          edit: "crisp, professional",
+          kb: kbInfo,
+        },
+      ];
+    }
+
+    // If we have product-specific shots, use them; otherwise filter coffee shots
+    if (productShots.length > 0) {
+      pool = productShots;
+    } else {
+      // Fallback: filter out coffee shots for generic non-coffee cafes
       const coffeeShots = new Set([
         "Signature drink spotlight",
         "Latte art detail",
