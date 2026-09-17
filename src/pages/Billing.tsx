@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import {
   BadgeCheck,
   CalendarClock,
+  Check,
   CreditCard,
   ExternalLink,
   Loader2,
@@ -20,7 +21,7 @@ import {
   useLocalPrices,
 } from "@/hooks/use-local-prices";
 
-import { PLAN_META, PLAN_ORDER, type PlanId } from "@/convex/lib/planLimits";
+import { PLAN_META, PLAN_ORDER, PLAN_HIGHLIGHTS, type PlanId } from "@/convex/lib/planLimits";
 
 /** Derived from the shared plan catalog so prices can never drift. */
 const PLANS: {
@@ -285,6 +286,17 @@ export default function Billing() {
                       /month
                     </span>
                   </div>
+
+                  {/* Plan highlights */}
+                  <div className="mt-5 flex flex-1 flex-col gap-2">
+                    {PLAN_HIGHLIGHTS[p.id].map((highlight) => (
+                      <div key={highlight} className="flex items-start gap-2">
+                        <Check className="mt-0.5 size-4 shrink-0 text-forest-600" />
+                        <span className="text-sm text-[#6e6a60]">{highlight}</span>
+                      </div>
+                    ))}
+                  </div>
+
                   <Button
                     onClick={() => void subscribe(p.id)}
                     disabled={busyPlan !== null || isCurrentPlan}
