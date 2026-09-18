@@ -253,7 +253,7 @@ export default function Billing() {
           </div>
 
           {/* Plan cards - always show for upgrade options */}
-          <div className="grid gap-6 lg:grid-cols-3 grid-cols-1">
+          <div className="flex flex-col gap-6">
             {PLANS.map((p) => {
               const isCurrentPlan = sub?.plan === p.id;
               const planIndex = PLAN_ORDER.indexOf(p.id);
@@ -264,7 +264,7 @@ export default function Billing() {
               return (
                 <div
                   key={p.id}
-                  className={`relative flex flex-col rounded-3xl p-8 min-h-[650px] ${
+                  className={`relative flex flex-col md:flex-row md:items-center md:justify-between rounded-3xl p-8 gap-8 ${
                     p.popular ? "glass-panel ring-2 ring-ink" : "glass-panel-soft"
                   }`}
                 >
@@ -273,46 +273,59 @@ export default function Billing() {
                       Most popular
                     </span>
                   )}
-                  <span className="text-2xl">{PLAN_EMOJI[p.id]}</span>
-                  <h3 className="mt-2 font-serif text-lg font-semibold text-ink">
-                    {p.name}
-                  </h3>
-                  <p className="mt-0.5 text-xs text-[#8f8b83]">{p.blurb}</p>
-                  <div className="mt-4 flex items-baseline gap-1">
-                    <span className="font-serif text-3xl font-semibold text-ink">
-                      {price(p.id)}
-                    </span>
-                    <span className="text-sm font-medium text-[#8f8b83]">
-                      /month
-                    </span>
-                  </div>
 
-                  {/* Plan highlights */}
-                  <div className="mt-5 flex flex-1 flex-col gap-3">
-                    {PLAN_HIGHLIGHTS[p.id].map((highlight) => (
-                      <div key={highlight} className="flex items-start gap-2">
-                        <Check className="mt-0.5 size-4 shrink-0 text-forest-600 flex-shrink-0" />
-                        <span className="text-sm leading-relaxed text-[#6e6a60]">{highlight}</span>
+                  {/* Left side: Plan info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{PLAN_EMOJI[p.id]}</span>
+                      <div>
+                        <h3 className="font-serif text-xl font-semibold text-ink">
+                          {p.name}
+                        </h3>
+                        <p className="text-xs text-[#8f8b83]">{p.blurb}</p>
                       </div>
-                    ))}
+                    </div>
+                    <div className="mt-4 flex items-baseline gap-1">
+                      <span className="font-serif text-3xl font-semibold text-ink">
+                        {price(p.id)}
+                      </span>
+                      <span className="text-sm font-medium text-[#8f8b83]">
+                        /month
+                      </span>
+                    </div>
                   </div>
 
-                  <Button
-                    onClick={() => void subscribe(p.id)}
-                    disabled={busyPlan !== null || isCurrentPlan}
-                    className={`mt-6 w-full rounded-xl ${
-                      p.popular
-                        ? ""
-                        : "bg-white text-ink ring-1 ring-hairline hover:bg-cream"
-                    }`}
-                  >
-                    {busyPlan === p.id ? (
-                      <Loader2 className="mr-2 size-4 animate-spin" />
-                    ) : (
-                      <Sparkles className="mr-2 size-4" />
-                    )}
-                    {isCurrentPlan ? "Current plan" : isUpgrade ? "Upgrade" : "Subscribe"}
-                  </Button>
+                  {/* Middle: Plan highlights */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-col gap-3">
+                      {PLAN_HIGHLIGHTS[p.id].slice(0, 4).map((highlight) => (
+                        <div key={highlight} className="flex items-start gap-2">
+                          <Check className="mt-0.5 size-4 shrink-0 text-forest-600 flex-shrink-0" />
+                          <span className="text-sm leading-relaxed text-[#6e6a60]">{highlight}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Right side: Button */}
+                  <div className="md:flex-shrink-0">
+                    <Button
+                      onClick={() => void subscribe(p.id)}
+                      disabled={busyPlan !== null || isCurrentPlan}
+                      className={`w-full md:w-auto rounded-xl ${
+                        p.popular
+                          ? ""
+                          : "bg-white text-ink ring-1 ring-hairline hover:bg-cream"
+                      }`}
+                    >
+                        {busyPlan === p.id ? (
+                          <Loader2 className="mr-2 size-4 animate-spin" />
+                        ) : (
+                          <Sparkles className="mr-2 size-4" />
+                        )}
+                        {isCurrentPlan ? "Current plan" : isUpgrade ? "Upgrade" : "Subscribe"}
+                      </Button>
+                    </div>
                 </div>
               );
             })}
