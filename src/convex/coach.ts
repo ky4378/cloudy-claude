@@ -419,26 +419,44 @@ export const askCoach = action({
 
       const result = await coachReply(business, posts, clean, history);
 
-      try {
-        await ctx.runMutation(internal.coach.appendMessages, {
-          businessId: business._id,
-          messages: [{ role: "user", content: clean, createdAt: Date.now() }],
-        });
-      } catch (e) {
-        console.error("Failed to save user message:", e);
-      }
-
+      // Save both messages to thread (user and assistant)
+      // Do this as a single operation if possible
+      let messagesSaved = false;
       try {
         await ctx.runMutation(internal.coach.appendMessages, {
           businessId: business._id,
           messages: [
+            { role: "user", content: clean, createdAt: Date.now() },
             { role: "assistant", content: JSON.stringify(result), createdAt: Date.now() },
           ],
         });
+        messagesSaved = true;
       } catch (e) {
-        console.error("Failed to save assistant message:", e);
+        console.error("Failed to save messages:", e);
+        // Try saving them separately as fallback
+        try {
+          await ctx.runMutation(internal.coach.appendMessages, {
+            businessId: business._id,
+            messages: [{ role: "user", content: clean, createdAt: Date.now() }],
+          });
+          messagesSaved = true;
+        } catch (e2) {
+          console.error("Failed to save user message:", e2);
+        }
+        try {
+          await ctx.runMutation(internal.coach.appendMessages, {
+            businessId: business._id,
+            messages: [
+              { role: "assistant", content: JSON.stringify(result), createdAt: Date.now() },
+            ],
+          });
+          messagesSaved = true;
+        } catch (e3) {
+          console.error("Failed to save assistant message:", e3);
+        }
       }
 
+      // Increment usage but don't fail if it errors
       try {
         await ctx.runMutation(internal.billing.incrementUsage, {
           userId,
