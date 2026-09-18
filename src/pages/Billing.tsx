@@ -254,7 +254,7 @@ export default function Billing() {
 
       {/* Main content */}
       <main className="px-4 pt-24 pb-16 lg:ml-[330px] lg:px-8 lg:pt-10">
-        <div className="mx-auto max-w-4xl flex w-full flex-col gap-8">
+        <div className="mx-auto max-w-3xl flex w-full flex-col gap-8">
           <div className="flex items-center gap-3">
             <div className="flex size-11 items-center justify-center rounded-2xl bg-forest-600 text-white shadow-sm">
               <CreditCard className="size-5" />
