@@ -365,7 +365,7 @@ export const buildVoiceProfile = (profile: BusinessProfile): BrandVoice => {
     ctaStyle: rule.ctaStyle,
     emoji: rule.emoji,
     platform: rule.platform,
-    audience: profile.targetCustomers?.trim() || "their local customers",
+    audience: (typeof profile.targetCustomers === 'string' && profile.targetCustomers.trim()) || "their local customers",
     goals: Array.isArray(profile.goals) ? profile.goals : [],
     businessType: profile.businessType || "a local business",
     businessName: profile.businessName || "the business",
