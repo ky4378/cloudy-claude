@@ -254,7 +254,7 @@ export default function Billing() {
 
       {/* Main content */}
       <main className="px-4 pt-24 pb-16 lg:ml-[330px] lg:px-8 lg:pt-10">
-        <div className="mx-auto max-w-2xl flex w-full flex-col gap-8">
+        <div className="mx-auto max-w-7xl flex w-full flex-col gap-8">
           <div className="flex items-center gap-3">
             <div className="flex size-11 items-center justify-center rounded-2xl bg-forest-600 text-white shadow-sm">
               <CreditCard className="size-5" />
@@ -270,8 +270,8 @@ export default function Billing() {
             </div>
           </div>
 
-          {/* Plan cards - 2-column grid on desktop, 1 on mobile */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+          {/* Plan cards - 3-column grid on desktop, 1 on mobile */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
             {PLANS.map((p) => {
               const isCurrentPlan = sub?.plan === p.id;
               const planIndex = PLAN_ORDER.indexOf(p.id);
