@@ -243,7 +243,7 @@ How to answer:
 
 function fallbackCoach(profile: BusinessProfile, message: string): CoachResponse {
   const m = message.toLowerCase();
-  const name = profile.businessName;
+  const name = profile.businessName || "Your Business";
   const loc = profile.location || "your area";
   const product = (profile.products && profile.products[0]) || "your signature product";
   const p1 = product.charAt(0).toUpperCase() + product.slice(1);
