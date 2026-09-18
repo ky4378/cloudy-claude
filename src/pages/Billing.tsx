@@ -235,7 +235,7 @@ export default function Billing() {
       <GlassBackdrop grid={false} />
 
       {/* Main content */}
-      <main className="px-4 pt-24 pb-16 lg:px-[330px] lg:pt-10">
+      <main className="px-4 pt-24 pb-16 lg:pl-[330px] lg:pr-[330px] lg:pt-10">
         <div className="flex w-full flex-col gap-8">
           <div className="flex items-center gap-3">
             <div className="flex size-11 items-center justify-center rounded-2xl bg-forest-600 text-white shadow-sm">
