@@ -356,6 +356,8 @@ export const buildVoiceProfile = (profile: BusinessProfile): BrandVoice => {
   const tone: ToneId =
     TONE_ORDER.find((t) => picked.includes(t)) ?? "Friendly";
   const rule = VOICE_RULES[tone];
+  const businessType = (typeof profile.businessType === 'string' && profile.businessType.trim()) || "a local business";
+  const businessName = (typeof profile.businessName === 'string' && profile.businessName.trim()) || "the business";
   return {
     tone,
     statement: rule.statement,
@@ -367,8 +369,8 @@ export const buildVoiceProfile = (profile: BusinessProfile): BrandVoice => {
     platform: rule.platform,
     audience: (typeof profile.targetCustomers === 'string' && profile.targetCustomers.trim()) || "their local customers",
     goals: Array.isArray(profile.goals) ? profile.goals : [],
-    businessType: profile.businessType || "a local business",
-    businessName: profile.businessName || "the business",
+    businessType,
+    businessName,
   };
 };
 
