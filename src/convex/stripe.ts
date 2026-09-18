@@ -292,6 +292,57 @@ export const verifyCheckout = action({
   },
 });
 
+/**
+ * Manually sync a user's subscription from Stripe if the automatic webhook sync failed.
+ * This is useful for troubleshooting payment issues where a user paid but their
+ * subscription wasn't synced to Convex.
+ */
+export const manualSyncSubscription = action({
+  args: {},
+  handler: async (ctx): Promise<{ ok: boolean; message?: string }> => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new Error("Not authenticated");
+    if (!STRIPE_SECRET_KEY) throw new Error("Stripe not configured");
+
+    try {
+      const stripe = new Stripe(STRIPE_SECRET_KEY);
+
+      // Find the user's Stripe customer and subscription
+      const customers = await stripe.customers.list({
+        email: (await ctx.runQuery(internal.billing.getUserEmail, { userId })) ?? undefined,
+        limit: 100,
+      });
+
+      let found = false;
+      for (const customer of customers.data) {
+        const subs = await stripe.subscriptions.list({
+          customer: customer.id,
+          limit: 100,
+          status: "all",
+        });
+
+        for (const sub of subs.data) {
+          // Only sync subscriptions that belong to this user
+          if (sub.metadata?.userId === userId || customer.metadata?.userId === userId) {
+            await syncSubscription(ctx, sub as unknown as SubscriptionSnapshot);
+            found = true;
+            return { ok: true, message: `Synced subscription: ${sub.id}` };
+          }
+        }
+      }
+
+      if (!found) {
+        return { ok: false, message: "No Stripe subscription found for your account" };
+      }
+    } catch (err) {
+      return {
+        ok: false,
+        message: `Sync failed: ${err instanceof Error ? err.message : "unknown error"}`,
+      };
+    }
+  },
+});
+
 /** Stripe Billing Portal — update card, view invoices, etc. */
 export const createPortalSession = action({
   args: { origin: v.string() },

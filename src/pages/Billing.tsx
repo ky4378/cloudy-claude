@@ -81,6 +81,8 @@ export default function Billing() {
   const [cancelBusy, setCancelBusy] = useState(false);
   const [resumeBusy, setResumeBusy] = useState(false);
   const [verifying, setVerifying] = useState(false);
+  const [syncingSubscription, setSyncingSubscription] = useState(false);
+  const manualSync = useAction(api.stripe.manualSyncSubscription);
 
   useEffect(() => {
     if (data === null) {
@@ -164,6 +166,22 @@ export default function Billing() {
     } catch {
       setPortalBusy(false);
       toast.error("Couldn't open billing portal.");
+    }
+  };
+
+  const handleSyncSubscription = async () => {
+    setSyncingSubscription(true);
+    try {
+      const result = await manualSync();
+      if (result.ok) {
+        toast.success("✨ Subscription synced! Your plan is now active.");
+      } else {
+        toast.error(result.message || "Couldn't sync subscription. Please try again.");
+      }
+    } catch (e) {
+      toast.error("Sync failed. Please try again or contact support.");
+    } finally {
+      setSyncingSubscription(false);
     }
   };
 
@@ -330,6 +348,26 @@ export default function Billing() {
               );
             })}
           </div>
+
+          {!billing && (
+            <div className="glass-panel rounded-2xl p-6 text-center">
+              <p className="mb-4 text-sm text-[#6e6a60]">
+                Already paid? Your subscription might not be synced yet. Click below to sync it from Stripe.
+              </p>
+              <Button
+                onClick={handleSyncSubscription}
+                disabled={syncingSubscription}
+                className="rounded-xl"
+              >
+                {syncingSubscription ? (
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                ) : (
+                  <CreditCard className="mr-2 size-4" />
+                )}
+                Sync my subscription
+              </Button>
+            </div>
+          )}
 
           <p className="flex items-center justify-center gap-1.5 text-center text-xs text-[#8f8b83]">
             <ShieldCheck className="size-3.5" />
