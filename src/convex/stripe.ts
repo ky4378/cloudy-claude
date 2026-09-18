@@ -313,6 +313,10 @@ export const manualSyncSubscription = action({
         limit: 100,
       });
 
+      if (customers.data.length === 0) {
+        return { ok: false, message: "No Stripe customer found with your email" };
+      }
+
       let found = false;
       for (const customer of customers.data) {
         const subs = await stripe.subscriptions.list({
@@ -352,6 +356,8 @@ export const manualSyncSubscription = action({
         message: `Sync failed: ${err instanceof Error ? err.message : "unknown error"}`,
       };
     }
+    // Fallback return (should never reach here)
+    return { ok: false, message: "Unknown error during subscription sync" };
   },
 });
 
