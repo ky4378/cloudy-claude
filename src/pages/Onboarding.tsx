@@ -244,7 +244,11 @@ function MenuUploadField({ value, onChange, placeholder }: MenuUploadFieldProps)
 
           if (result.products && result.products.length > 0) {
             const extractedText = result.products.join("\n");
-            onChange(extractedText);
+            const currentValue = value.trim();
+            const newValue = currentValue
+              ? `${currentValue}\n${extractedText}`
+              : extractedText;
+            onChange(newValue);
             toast.success(`✨ AI extracted ${result.products.length} products from your menu! 📸`);
           } else {
             toast.error("No products found in the image. Please make sure it's a clear menu photo.");
