@@ -10,16 +10,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Heart, Loader2, Sparkles } from "lucide-react";
+import { Heart, Loader2, Sparkles, Star } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 export const RATINGS = [
-  { value: 1, emoji: "😞", label: "Not happy" },
-  { value: 2, emoji: "😕", label: "Meh" },
-  { value: 3, emoji: "🙂", label: "Okay" },
-  { value: 4, emoji: "😊", label: "Happy" },
-  { value: 5, emoji: "🤩", label: "Love it" },
+  { value: 1, emoji: "⭐", label: "" },
+  { value: 2, emoji: "⭐", label: "" },
+  { value: 3, emoji: "⭐", label: "" },
+  { value: 4, emoji: "⭐", label: "" },
+  { value: 5, emoji: "⭐", label: "" },
 ];
 
 // After closing without submitting, don't nag again for a day.
@@ -101,28 +101,23 @@ export function FeedbackDialog({
         </DialogHeader>
 
         {/* Rating */}
-        <div className="flex items-center justify-between gap-1">
+        <div className="flex items-center justify-center gap-2">
           {RATINGS.map((r) => (
             <button
               key={r.value}
               type="button"
               onClick={() => setRating(r.value)}
-              aria-label={r.label}
-              title={r.label}
-              className={`flex size-12 flex-col items-center justify-center gap-0.5 rounded-2xl border transition-all ${
-                rating === r.value
-                  ? "border-forest-500 bg-forest-50 shadow-[0_6px_20px_-8px_rgba(65,101,87,0.5)] scale-105"
-                  : "border-hairline bg-white hover:border-forest-300"
-              }`}
+              aria-label={`${r.value} stars`}
+              title={`${r.value} stars`}
+              className="transition-all hover:scale-110"
             >
-              <span className="text-xl leading-none">{r.emoji}</span>
-              <span
-                className={`text-[9px] font-semibold uppercase tracking-wide ${
-                  rating === r.value ? "text-forest-700" : "text-[#8f8b83]"
+              <Star
+                className={`size-7 transition-all ${
+                  rating && rating >= r.value
+                    ? "fill-forest-600 text-forest-600"
+                    : "text-[#d9d4cc]"
                 }`}
-              >
-                {r.label}
-              </span>
+              />
             </button>
           ))}
         </div>

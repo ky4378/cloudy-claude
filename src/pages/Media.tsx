@@ -35,6 +35,7 @@ export default function Media() {
   const [uploading, setUploading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [setupNeededState, setSetupNeeded] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -163,8 +164,8 @@ export default function Media() {
       <GlassBackdrop grid={false} />
 
       {/* Main content */}
-      <main className="px-4 pt-24 pb-16 lg:pl-[330px] lg:pr-6 lg:pt-10">
-        <div className="mx-auto flex max-w-4xl flex-col gap-5">
+      <main className="px-4 pt-24 pb-16 lg:pl-[330px] lg:pr-6 lg:pt-10 lg:-ml-[20rem]">
+        <div className="flex w-full flex-col gap-5">
           <div className="flex items-center gap-3">
             <div className="flex size-11 items-center justify-center rounded-2xl bg-forest-600 text-white shadow-sm">
               <Images className="size-5" />
@@ -233,11 +234,32 @@ export default function Media() {
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
-                className="mt-5 flex w-full flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-hairline bg-cream/40 px-6 py-10 text-center transition-colors hover:border-forest-300 hover:bg-forest-50/40"
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsDragging(true);
+                }}
+                onDragLeave={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsDragging(false);
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsDragging(false);
+                  const file = e.dataTransfer?.files?.[0];
+                  if (file) handleFile(file);
+                }}
+                className={`mt-5 flex w-full flex-col items-center gap-2 rounded-2xl border-2 border-dashed px-6 py-10 text-center transition-colors ${
+                  isDragging
+                    ? "border-forest-500 bg-forest-50"
+                    : "border-hairline bg-cream/40 hover:border-forest-300 hover:bg-forest-50/40"
+                }`}
               >
-                <UploadCloud className="size-7 text-forest-500" />
+                <UploadCloud className={`size-7 ${isDragging ? "text-forest-600" : "text-forest-500"}`} />
                 <span className="text-sm font-semibold text-ink">
-                  Choose an image
+                  {isDragging ? "Drop your image here" : "Drag and drop or click to choose"}
                 </span>
                 <span className="text-xs text-[#8f8b83]">
                   JPG, PNG or WebP · up to 8 MB

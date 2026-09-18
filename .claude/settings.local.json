@@ -31,7 +31,8 @@
       "Bash(git commit *)",
       "Bash(CONVEX_DEPLOYMENT=dazzling-pigeon-289 npx convex deploy)",
       "Bash(vercel --version)",
-      "Bash(grep -E \"\\\\.\\(tsx|ts|jsx|js\\)$\")"
+      "Bash(grep -E \"\\\\.\\(tsx|ts|jsx|js\\)$\")",
+      "mcp__claude-in-chrome__tabs_context_mcp"
     ]
   }
 }

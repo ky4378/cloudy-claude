@@ -203,7 +203,7 @@ export function SidebarContent({
         </div>
       </div>
 
-      <div className="mt-auto px-4 pb-5 pt-6">
+      <div className="px-4 pb-3 pt-3">
         <div className="flex items-center gap-3 rounded-2xl border border-hairline bg-white p-3">
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold text-ink">
@@ -221,7 +221,7 @@ export function SidebarContent({
             <LogOut className="size-4" />
           </Button>
         </div>
-        <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-[11px] text-white/60">
+        <p className="mt-2 flex items-center justify-center gap-1.5 text-center text-[11px] text-white/60">
           <Zap className="size-3.5 text-[#9db8a8]" />
           Starter plan · 30-day calendar
         </p>

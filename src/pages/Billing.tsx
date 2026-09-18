@@ -255,7 +255,7 @@ export default function Billing() {
       {/* Main content */}
       <main className="px-4 pt-24 pb-16 lg:ml-[330px] lg:px-0 lg:pt-10">
         <div className="flex w-full flex-col gap-8">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 lg:-ml-[20rem]">
             <div className="flex size-11 items-center justify-center rounded-2xl bg-forest-600 text-white shadow-sm">
               <CreditCard className="size-5" />
             </div>
@@ -271,7 +271,7 @@ export default function Billing() {
           </div>
 
           {/* Plan cards - 3-column grid on desktop, 1 on mobile */}
-          <div className="w-full grid grid-cols-1 lg:grid-cols-[1fr_1fr_1fr] gap-20 lg:-ml-[4rem]">
+          <div className="w-full grid grid-cols-1 lg:grid-cols-[1fr_1fr_1fr] gap-8 lg:-ml-[20rem]">
             {PLANS.map((p) => {
               const isCurrentPlan = sub?.plan === p.id;
               const planIndex = PLAN_ORDER.indexOf(p.id);
@@ -369,12 +369,12 @@ export default function Billing() {
             </div>
           )}
 
-          <p className="flex items-center justify-center gap-1.5 text-center text-xs text-[#8f8b83]">
+          <p className="flex items-center justify-center gap-1.5 text-center text-xs text-[#8f8b83] lg:-ml-[20rem]">
             <ShieldCheck className="size-3.5" />
             Auto-renews monthly. Payments are handled securely by Stripe.
           </p>
           {currency !== "USD" && (
-            <p className="text-center text-[11px] text-[#a9a49a]">
+            <p className="text-center text-[11px] text-[#a9a49a] lg:-ml-[20rem]">
               Prices shown and charged in {currency}.
             </p>
           )}
@@ -382,7 +382,7 @@ export default function Billing() {
           {sub && (
             <>
               {/* Current subscription */}
-              <div className="glass-panel rounded-3xl p-6">
+              <div className="glass-panel rounded-3xl p-6 lg:-ml-[20rem]">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
@@ -516,7 +516,7 @@ export default function Billing() {
               </div>
 
               {/* Trust row */}
-              <div className="flex flex-col items-center gap-2 rounded-3xl border border-dashed border-hairline bg-cream/40 px-6 py-6 text-center">
+              <div className="flex flex-col items-center gap-2 rounded-3xl border border-dashed border-hairline bg-cream/40 px-6 py-6 text-center lg:-ml-[20rem]">
                 <BadgeCheck className="size-5 text-forest-500" />
                 <p className="max-w-md text-xs leading-relaxed text-[#6e6a60]">
                   Payments are processed securely by Stripe. You can update

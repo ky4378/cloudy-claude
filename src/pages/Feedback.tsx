@@ -12,6 +12,7 @@ import {
   MessageSquareHeart,
   Send,
   Sparkles,
+  Star,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -62,7 +63,12 @@ export default function Feedback() {
       setSent(true);
       setTimeout(() => setSent(false), 4000);
       toast.success("Thanks — your feedback helps us improve 💚");
-    } catch {
+      // Refetch feedback data after submission
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+    } catch (error) {
+      console.error("Feedback submission error:", error);
       toast.error("Couldn't send feedback. Try again.");
     } finally {
       setSubmitting(false);
@@ -87,7 +93,7 @@ export default function Feedback() {
       <GlassBackdrop grid={false} />
 
       {/* Main content */}
-      <main className="px-4 pt-24 pb-16 lg:pl-[330px] lg:pr-6 lg:pt-10">
+      <main className="px-4 pt-24 pb-16 lg:pl-[330px] lg:pr-6 lg:pt-10 lg:-ml-[20rem]">
         <div className="mx-auto flex max-w-3xl flex-col gap-5">
           <div className="flex items-center gap-3">
             <div className="flex size-11 items-center justify-center rounded-2xl bg-forest-600 text-white shadow-sm">
@@ -126,28 +132,23 @@ export default function Feedback() {
             </div>
 
             {/* Rating */}
-            <div className="mt-5 flex items-center justify-between gap-1">
+            <div className="mt-5 flex items-center justify-center gap-2">
               {RATINGS.map((r) => (
                 <button
                   key={r.value}
                   type="button"
                   onClick={() => setRating(r.value)}
-                  aria-label={r.label}
-                  title={r.label}
-                  className={`flex size-12 flex-col items-center justify-center gap-0.5 rounded-2xl border transition-all ${
-                    rating === r.value
-                      ? "scale-105 border-forest-500 bg-forest-50 shadow-[0_6px_20px_-8px_rgba(65,101,87,0.5)]"
-                      : "border-hairline bg-white hover:border-forest-300"
-                  }`}
+                  aria-label={`${r.value} stars`}
+                  title={`${r.value} stars`}
+                  className="transition-all hover:scale-110"
                 >
-                  <span className="text-xl leading-none">{r.emoji}</span>
-                  <span
-                    className={`text-[9px] font-semibold uppercase tracking-wide ${
-                      rating === r.value ? "text-forest-700" : "text-[#8f8b83]"
+                  <Star
+                    className={`size-7 transition-all ${
+                      rating && rating >= r.value
+                        ? "fill-forest-600 text-forest-600"
+                        : "text-[#d9d4cc]"
                     }`}
-                  >
-                    {r.label}
-                  </span>
+                  />
                 </button>
               ))}
             </div>
@@ -216,9 +217,18 @@ export default function Feedback() {
                     className="rounded-2xl border border-hairline bg-white p-4"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-xl leading-none">
-                        {RATING_EMOJI[s.rating] ?? "🙂"}
-                      </span>
+                      <div className="flex gap-0.5">
+                        {Array.from({ length: 5 }).map((_, idx) => (
+                          <Star
+                            key={idx}
+                            className={`size-4 ${
+                              idx < s.rating
+                                ? "fill-forest-600 text-forest-600"
+                                : "text-[#d9d4cc]"
+                            }`}
+                          />
+                        ))}
+                      </div>
                       <span className="text-xs font-medium text-[#8f8b83]">
                         {formatDate(s.createdAt)}
                       </span>
