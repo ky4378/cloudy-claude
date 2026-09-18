@@ -253,7 +253,7 @@ export default function Billing() {
       <GlassBackdrop grid={false} />
 
       {/* Main content */}
-      <main className="px-4 pt-24 pb-16 lg:ml-[330px] lg:px-2 lg:pt-10">
+      <main className="px-4 pt-24 pb-16 lg:ml-[330px] lg:px-1 lg:pt-10">
         <div className="flex w-full flex-col gap-8">
           <div className="flex items-center gap-3">
             <div className="flex size-11 items-center justify-center rounded-2xl bg-forest-600 text-white shadow-sm">
@@ -271,7 +271,7 @@ export default function Billing() {
           </div>
 
           {/* Plan cards - 3-column grid on desktop, 1 on mobile */}
-          <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-20 lg:auto-cols-fr">
+          <div className="w-full grid grid-cols-1 lg:grid-cols-[1fr_1fr_1fr] gap-20">
             {PLANS.map((p) => {
               const isCurrentPlan = sub?.plan === p.id;
               const planIndex = PLAN_ORDER.indexOf(p.id);
