@@ -310,24 +310,30 @@ async function coachReply(
   message: string,
   history: ThreadMessage[],
 ): Promise<CoachResponse> {
-  const profile = buildProfile(business);
-  if (!OPENAI_KEY) return fallbackCoach(profile, message);
+  try {
+    const profile = buildProfile(business);
+    if (!OPENAI_KEY) return fallbackCoach(profile, message);
 
-  const historyItems: ChatItem[] = history.slice(-10).map((m) => ({
-    role: m.role === "assistant" ? "assistant" : "user",
-    content: m.role === "assistant" ? replyText(m.content) : m.content,
-  }));
+    const historyItems: ChatItem[] = history.slice(-10).map((m) => ({
+      role: m.role === "assistant" ? "assistant" : "user",
+      content: m.role === "assistant" ? replyText(m.content) : m.content,
+    }));
 
-  const content = await chat(
-    [
-      { role: "system", content: buildSystemPrompt(profile, planNote(posts)) },
-      ...historyItems,
-      { role: "user", content: message },
-    ],
-    1400,
-  );
-  if (!content) return fallbackCoach(profile, message);
-  return parseCoachResponse(content) ?? fallbackCoach(profile, message);
+    const content = await chat(
+      [
+        { role: "system", content: buildSystemPrompt(profile, planNote(posts)) },
+        ...historyItems,
+        { role: "user", content: message },
+      ],
+      1400,
+    );
+    if (!content) return fallbackCoach(profile, message);
+    return parseCoachResponse(content) ?? fallbackCoach(profile, message);
+  } catch (e) {
+    console.error("coachReply error:", e);
+    const profile = buildProfile(business);
+    return fallbackCoach(profile, message);
+  }
 }
 
 // ---------------------------------------------------------------------------
