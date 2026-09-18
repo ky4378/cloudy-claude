@@ -115,7 +115,7 @@ const customizeForProducts = (
   day: DayPlan,
   biz: BusinessProfile,
 ): DayPlan => {
-  if (!biz.products.length) return day;
+  if (!biz.products || !biz.products.length) return day;
 
   const productStr = biz.products.join(" ").toLowerCase();
   let modified: DayPlan = { ...day };
@@ -212,7 +212,7 @@ const applyFocusDay = (
   let subject = special.shot.subject;
 
   // Customize subject based on actual products (e.g., acai bowls instead of lattes).
-  if (biz.businessType === "cafe" && biz.products.length > 0) {
+  if (biz.businessType === "cafe" && biz.products && biz.products.length > 0) {
     const productStr = biz.products.join(" ").toLowerCase();
     if ((productStr.includes("acai") || productStr.includes("açai")) && subject.includes("latte")) {
       subject = subject.replace(/latte|coffee|espresso/gi, (match) => {
@@ -241,7 +241,7 @@ const applyFocusDay = (
 
   // Customize photo instructions for non-coffee cafe businesses.
   let photoInstructions = buildPhotoInstructions(special.shot);
-  if (biz.businessType === "cafe" && biz.products.length > 0) {
+  if (biz.businessType === "cafe" && biz.products && biz.products.length > 0) {
     const productStr = biz.products.join(" ").toLowerCase();
     if (productStr.includes("acai") && photoInstructions.includes("coffee")) {
       photoInstructions = photoInstructions
