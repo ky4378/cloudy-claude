@@ -245,7 +245,7 @@ function fallbackCoach(profile: BusinessProfile, message: string): CoachResponse
   const m = message.toLowerCase();
   const name = profile.businessName;
   const loc = profile.location || "your area";
-  const product = profile.products[0] ?? "your signature product";
+  const product = (profile.products && profile.products[0]) || "your signature product";
   const p1 = product.charAt(0).toUpperCase() + product.slice(1);
   const brand = name.toLowerCase().replace(/[^a-z0-9]/g, "");
   const local = loc.toLowerCase().replace(/[^a-z0-9]/g, "");
