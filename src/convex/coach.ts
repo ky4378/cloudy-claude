@@ -386,19 +386,22 @@ export const clearThread = mutation({
 export const askCoach = action({
   args: { message: v.string() },
   handler: async (ctx, { message }): Promise<CoachResponse> => {
-    try {
-      const userId = await getAuthUserId(ctx);
-      if (userId === null) throw new Error("Not authenticated");
-      const clean = message.trim();
-      if (!clean) throw new Error("Message is empty");
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new Error("Not authenticated");
 
+    const clean = message.trim();
+    if (!clean) throw new Error("Message is empty");
+
+    let business: Doc<"businesses"> | null = null;
+
+    try {
       const featCheck = await ctx.runQuery(internal.billing.canUseFeature, {
         userId,
         feature: "coachMessages",
       });
       if (!featCheck.ok) throw new Error(featCheck.reason);
 
-      const business = await ctx.runQuery(
+      business = await ctx.runQuery(
         internal.businesses.getBusinessByUser,
         { userId },
       );
@@ -408,31 +411,59 @@ export const askCoach = action({
         internal.businesses.getPostsByBusiness,
         { businessId: business._id },
       );
+
       const thread = await ctx.runQuery(internal.coach.getThreadByBusiness, {
         businessId: business._id,
       });
       const history = thread?.messages ?? [];
 
-      await ctx.runMutation(internal.coach.appendMessages, {
-        businessId: business._id,
-        messages: [{ role: "user", content: clean, createdAt: Date.now() }],
-      });
-
       const result = await coachReply(business, posts, clean, history);
-      await ctx.runMutation(internal.coach.appendMessages, {
-        businessId: business._id,
-        messages: [
-          { role: "assistant", content: JSON.stringify(result), createdAt: Date.now() },
-        ],
-      });
-      await ctx.runMutation(internal.billing.incrementUsage, {
-        userId,
-        feature: "coachMessages",
-      });
+
+      try {
+        await ctx.runMutation(internal.coach.appendMessages, {
+          businessId: business._id,
+          messages: [{ role: "user", content: clean, createdAt: Date.now() }],
+        });
+      } catch (e) {
+        console.error("Failed to save user message:", e);
+      }
+
+      try {
+        await ctx.runMutation(internal.coach.appendMessages, {
+          businessId: business._id,
+          messages: [
+            { role: "assistant", content: JSON.stringify(result), createdAt: Date.now() },
+          ],
+        });
+      } catch (e) {
+        console.error("Failed to save assistant message:", e);
+      }
+
+      try {
+        await ctx.runMutation(internal.billing.incrementUsage, {
+          userId,
+          feature: "coachMessages",
+        });
+      } catch (e) {
+        console.error("Failed to increment usage:", e);
+      }
+
       return result;
     } catch (e) {
       console.error("askCoach error:", e);
-      throw e;
+      if (business) {
+        const profile = buildProfile(business);
+        return fallbackCoach(profile, clean);
+      }
+      // If no business profile, return a generic fallback
+      return {
+        reply: "Thanks for your message! To get personalized coach responses, please complete your business profile first. Head to Settings to add your business details, and I'll be able to give you specific advice tailored to your business.",
+        suggestions: [
+          "Go to Settings to set up my business profile",
+          "What can the coach help me with?",
+          "Show me example coach responses",
+        ],
+      };
     }
   },
 });

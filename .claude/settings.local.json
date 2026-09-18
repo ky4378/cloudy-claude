@@ -30,7 +30,8 @@
       "Bash(git commit -m 'Add live Instagram/TikTok trend integration to content plans *)",
       "Bash(git commit *)",
       "Bash(CONVEX_DEPLOYMENT=dazzling-pigeon-289 npx convex deploy)",
-      "Bash(vercel --version)"
+      "Bash(vercel --version)",
+      "Bash(grep -E \"\\\\.\\(tsx|ts|jsx|js\\)$\")"
     ]
   }
 }
