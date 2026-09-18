@@ -322,17 +322,29 @@ export const manualSyncSubscription = action({
         });
 
         for (const sub of subs.data) {
-          // Only sync subscriptions that belong to this user
-          if (sub.metadata?.userId === userId || customer.metadata?.userId === userId) {
-            await syncSubscription(ctx, sub as unknown as SubscriptionSnapshot);
-            found = true;
-            return { ok: true, message: `Synced subscription: ${sub.id}` };
+          // Sync any active or trialing subscription, regardless of metadata
+          // (metadata may not be set if subscription was created before the userId feature)
+          if (sub.status === "active" || sub.status === "trialing") {
+            try {
+              // Update metadata with userId if not already set
+              if (!sub.metadata?.userId) {
+                await stripe.subscriptions.update(sub.id, {
+                  metadata: { userId },
+                });
+              }
+              await syncSubscription(ctx, sub as unknown as SubscriptionSnapshot);
+              found = true;
+              return { ok: true, message: `✨ Synced subscription: ${sub.id}. Your plan is now active!` };
+            } catch (syncErr) {
+              console.error("Failed to sync subscription:", syncErr);
+              // Continue to next subscription if this one fails
+            }
           }
         }
       }
 
       if (!found) {
-        return { ok: false, message: "No Stripe subscription found for your account" };
+        return { ok: false, message: "No active subscription found for your account. Please check Stripe or contact support." };
       }
     } catch (err) {
       return {
