@@ -271,7 +271,7 @@ export default function Billing() {
           </div>
 
           {/* Plan cards - 3-column grid on desktop, 1 on mobile */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+          <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-10">
             {PLANS.map((p) => {
               const isCurrentPlan = sub?.plan === p.id;
               const planIndex = PLAN_ORDER.indexOf(p.id);
@@ -282,7 +282,7 @@ export default function Billing() {
               return (
                 <div
                   key={p.id}
-                  className={`relative flex flex-col rounded-3xl p-8 ${
+                  className={`relative flex flex-1 flex-col rounded-3xl p-8 ${
                     p.popular ? "glass-panel ring-2 ring-ink" : "glass-panel-soft"
                   }`}
                 >
