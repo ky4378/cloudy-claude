@@ -271,7 +271,7 @@ export default function Billing() {
           </div>
 
           {/* Plan cards - 3-column grid on desktop, 1 on mobile */}
-          <div className="w-full grid grid-cols-1 lg:grid-cols-[1fr_1fr_1fr] gap-20 lg:-mx-[0.25rem]">
+          <div className="w-full grid grid-cols-1 lg:grid-cols-[1fr_1fr_1fr] gap-20 lg:-ml-4">
             {PLANS.map((p) => {
               const isCurrentPlan = sub?.plan === p.id;
               const planIndex = PLAN_ORDER.indexOf(p.id);
