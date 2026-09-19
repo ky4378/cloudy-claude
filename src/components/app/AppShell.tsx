@@ -144,10 +144,7 @@ function SidebarContent({
       <div className="space-y-3 p-4">
         <div className="rounded-2xl border border-hairline bg-white p-4">
           <p className="truncate text-sm font-semibold text-ink">{data.business.businessName}</p>
-          <p className="truncate text-xs text-secondary-text">
-            {kb ? `${kb.emoji} ${kb.label}` : data.business.businessType} · {data.business.location}
-          </p>
-          {user?.email && <p className="mt-2 truncate text-xs text-secondary-text">{user.email}</p>}
+          {user?.email && <p className="mt-1 truncate text-xs text-secondary-text">{user.email}</p>}
           <Button
             variant="ghost"
             size="sm"
