@@ -339,11 +339,11 @@ export interface Shot {
 // ---------------------------------------------------------------------------
 
 export const GOALS = [
-  { id: "Increase sales", emoji: "📈" },
-  { id: "Get bookings", emoji: "📅" },
-  { id: "Increase followers", emoji: "🚀" },
-  { id: "Promote new products", emoji: "✨" },
-  { id: "Build trust", emoji: "🤝" },
+  { id: "Increase sales" },
+  { id: "Get bookings" },
+  { id: "Increase followers" },
+  { id: "Promote new products" },
+  { id: "Build trust" },
 ] as const;
 
 export const PERSONALITIES = [

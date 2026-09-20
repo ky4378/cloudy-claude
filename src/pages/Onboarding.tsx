@@ -869,7 +869,7 @@ export default function Onboarding() {
 
             {step === 3 && (
               <>
-                <Field label="What products or services do you offer?" hint="Type them or upload a menu photo to extract them automatically.">
+                <Field label="What products or services do you offer?" hint="Type them or upload a menu photo to extract them automatically. Encouraged for best results.">
                   <MenuUploadField
                     value={form.products}
                     onChange={(v) => set("products", v)}
