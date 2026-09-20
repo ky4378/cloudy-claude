@@ -758,7 +758,6 @@ export default function Onboarding() {
                             : "border-hairline bg-white text-ink hover:border-forest-300",
                         )}
                       >
-                        <span className="text-lg">{b.emoji}</span>
                         {b.label}
                       </button>
                     ))}
