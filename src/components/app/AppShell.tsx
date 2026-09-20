@@ -227,6 +227,7 @@ export default function AppShell() {
     );
   }
   if (data === null) return <Navigate to="/onboarding" replace />;
+  if (!usage?.hasSubscription) return <Navigate to="/dashboard/billing" replace />;
 
   const ctx: AppData = { business: data.business, posts: data.posts, usage };
 

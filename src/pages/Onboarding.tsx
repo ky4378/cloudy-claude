@@ -956,14 +956,25 @@ export default function Onboarding() {
           )}
 
           {step === STEPS.length - 1 && planNotice && (
-            <div className="mt-6 flex items-start gap-3 rounded-2xl border border-hairline bg-cream px-4 py-3 text-sm text-ink">
-              <AlertTriangle className="mt-0.5 size-4 shrink-0 text-forest-700" />
-              <p>
-                {planNotice}{" "}
-                <Link to="/billing" className="font-semibold text-forest-700 underline-offset-2 hover:underline">
-                  View plans
-                </Link>
-              </p>
+            <div className="mt-6 space-y-3 rounded-2xl border border-hairline bg-cream px-4 py-3">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="mt-0.5 size-4 shrink-0 text-forest-700" />
+                <p className="text-sm text-ink">{planNotice}</p>
+              </div>
+              <div className="grid grid-cols-3 gap-3 text-xs">
+                <div className="rounded-lg border border-forest-200 bg-white p-2">
+                  <p className="font-semibold text-ink">Starter</p>
+                  <p className="text-secondary-text">$19/month</p>
+                </div>
+                <div className="rounded-lg border border-forest-200 bg-white p-2">
+                  <p className="font-semibold text-ink">Growth</p>
+                  <p className="text-secondary-text">$29/month</p>
+                </div>
+                <div className="rounded-lg border border-forest-200 bg-white p-2">
+                  <p className="font-semibold text-ink">Pro</p>
+                  <p className="text-secondary-text">$55/month</p>
+                </div>
+              </div>
             </div>
           )}
 
