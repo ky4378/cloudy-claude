@@ -444,7 +444,7 @@ export const BUSINESS_TYPES: TypeKB[] = [
   kb(
     "cafe",
     "Café",
-    "☕",
+    "",
     "coffee lovers, students and remote workers",
     "Coffee",
     ["coffee", "specialtycoffee", "latteart", "coffeelover", "baristalife", "cafeculture", "thirdwavecoffee", "coffeeaesthetic", "coffeeshop", "morningcoffee"],
@@ -487,7 +487,7 @@ export const BUSINESS_TYPES: TypeKB[] = [
   kb(
     "restaurant",
     "Restaurant",
-    "🍽️",
+    "",
     "food lovers and local diners",
     "Eats",
     ["foodie", "foodstagram", "restaurant", "chefsofinstagram", "foodphotography", "dinnerideas", "localfood", "tastingmenu", "foodblogger", "gastropub"],
@@ -530,7 +530,7 @@ export const BUSINESS_TYPES: TypeKB[] = [
   kb(
     "tuition",
     "Tuition Centre",
-    "📚",
+    "",
     "students and parents",
     "Tutoring",
     ["studygram", "studytips", "studentlife", "examseason", "education", "studymotivation", "tuition", "learnwithme", "homeschool", "academic"],
@@ -702,7 +702,7 @@ export const BUSINESS_TYPES: TypeKB[] = [
   kb(
     "realestate",
     "Real Estate Agent",
-    "🏡",
+    "",
     "home buyers, sellers and investors",
     "RealEstate",
     ["realestate", "hometour", "dreamhome", "property", "realty", "househunting", "interiordesign", "homeinspiration", "listing", "realtorlife"],
@@ -745,7 +745,7 @@ export const BUSINESS_TYPES: TypeKB[] = [
   kb(
     "dealership",
     "Car Dealership",
-    "🚗",
+    "",
     "car buyers and drivers",
     "Cars",
     ["cardealership", "newcar", "carsales", "testdrive", "autos", "caroftheday", "carlifestyle", "cargram", "vehicle", "driveready"],
@@ -788,7 +788,7 @@ export const BUSINESS_TYPES: TypeKB[] = [
   kb(
     "retail",
     "Retail Store",
-    "🛍️",
+    "",
     "shoppers and style lovers",
     "Shopping",
     ["shoplocal", "newarrivals", "ootd", "fashion", "retailtherapy", "smallbusiness", "boutique", "onlineshopping", "styleinspo", "windowshopping"],
@@ -831,7 +831,7 @@ export const BUSINESS_TYPES: TypeKB[] = [
   kb(
     "petgroomer",
     "Pet Groomer",
-    "🐾",
+    "",
     "pet parents",
     "Pets",
     ["petgrooming", "dogsofinstagram", "pets", "groomer", "dogmom", "dogdad", "puppylove", "petcare", "furbaby", "doglife"],
@@ -874,7 +874,7 @@ export const BUSINESS_TYPES: TypeKB[] = [
   kb(
     "other",
     "Other Business",
-    "💼",
+    "",
     "your customers and local community",
     "Local",
     ["smallbusiness", "shoplocal", "localbusiness", "supportsmall", "entrepreneur", "businessowner", "communityfirst", "smallbiz", "locallove", "growyourbusiness"],
@@ -1049,7 +1049,7 @@ const toneFor = (personalities: string[]): Tone => {
   }
   if (p.includes("professional")) {
     return {
-      emoji: "💼",
+      emoji: "",
       short: (s) => `${s} — done properly, every time.`,
       long: (s, a, biz) =>
         `At ${biz.businessName}, we hold a simple standard: ${s}. It's why ${a} choose us and why they keep coming back.`,
@@ -1077,7 +1077,7 @@ const toneFor = (personalities: string[]): Tone => {
   }
   if (p.includes("modern")) {
     return {
-      emoji: "⚡",
+      emoji: "",
       short: (s) => `${s} — take the first 30 seconds to look.`,
       long: (s, a, biz) =>
         `${s} 🫡 ${biz.businessName} keeps it fresh for ${a} — screenshot-worthy, every single day.`,
@@ -1086,7 +1086,7 @@ const toneFor = (personalities: string[]): Tone => {
   }
   // friendly (default)
   return {
-    emoji: "💛",
+    emoji: "",
     short: (s) => `${s} — we couldn't be prouder of this one!`,
     long: (s, a, biz) =>
       `A little moment from ${biz.businessName} we had to share: ${s}. Made for ${a}, with a lot of care and a lot of heart.`,
