@@ -90,7 +90,7 @@ export default function Billing() {
     }
   }, [data]);
 
-  // Verify checkout and sync subscription, then show outcome.
+  // Verify checkout and sync subscription immediately (no lag).
   useEffect(() => {
     const outcome = searchParams.get("checkout");
     const sessionId = searchParams.get("session_id");
@@ -100,16 +100,17 @@ export default function Billing() {
         .then((result) => {
           if (result.ok && result.paid) {
             toast.success("Welcome aboard — your subscription is active ✨");
-            // Poll for subscription to appear (webhook sync can take a moment)
-            let attempts = 0;
-            const pollInterval = setInterval(() => {
-              attempts++;
-              if (billing?.subscription || attempts > 15) {
-                // Either subscription appeared or we've tried 15 times (30 seconds)
-                clearInterval(pollInterval);
-                window.location.href = "/dashboard/billing";
-              }
-            }, 2000);
+            // Sync subscription immediately without waiting
+            manualSync()
+              .then(() => {
+                // Subscription synced, clear URL and show it
+                window.history.replaceState({}, "", "/dashboard/billing");
+              })
+              .catch((err) => {
+                console.error("Sync error:", err);
+                // Even if sync fails, go to billing page
+                window.history.replaceState({}, "", "/dashboard/billing");
+              });
           } else if (result.ok && !result.paid) {
             toast.error("Payment not completed. Please try again.");
           } else {
@@ -127,7 +128,7 @@ export default function Billing() {
       toast.info("Checkout cancelled — no charge was made.");
       window.history.replaceState({}, "", "/dashboard/billing");
     }
-  }, [searchParams, verifyCheckout, billing]);
+  }, [searchParams, verifyCheckout, manualSync]);
 
   const business = data?.business ?? null;
   const posts = data?.posts ?? [];
