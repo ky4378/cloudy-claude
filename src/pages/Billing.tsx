@@ -100,7 +100,10 @@ export default function Billing() {
         .then((result) => {
           if (result.ok && result.paid) {
             toast.success("Welcome aboard — your subscription is active ✨");
-            window.history.replaceState({}, "", "/dashboard/billing");
+            // Wait 2 seconds for webhook to sync, then refresh to show subscription
+            setTimeout(() => {
+              window.location.href = "/dashboard/billing";
+            }, 2000);
           } else if (result.ok && !result.paid) {
             toast.error("Payment not completed. Please try again.");
           } else {
