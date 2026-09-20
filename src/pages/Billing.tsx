@@ -100,9 +100,15 @@ export default function Billing() {
         .then((result) => {
           if (result.ok && result.paid) {
             toast.success("Welcome aboard — your subscription is active ✨");
-            // Wait 2 seconds for webhook to sync, then refresh to show subscription
-            setTimeout(() => {
-              window.location.href = "/dashboard/billing";
+            // Poll for subscription to appear (webhook sync can take a moment)
+            let attempts = 0;
+            const pollInterval = setInterval(() => {
+              attempts++;
+              if (billing?.subscription || attempts > 15) {
+                // Either subscription appeared or we've tried 15 times (30 seconds)
+                clearInterval(pollInterval);
+                window.location.href = "/dashboard/billing";
+              }
             }, 2000);
           } else if (result.ok && !result.paid) {
             toast.error("Payment not completed. Please try again.");
@@ -121,7 +127,7 @@ export default function Billing() {
       toast.info("Checkout cancelled — no charge was made.");
       window.history.replaceState({}, "", "/dashboard/billing");
     }
-  }, [searchParams, verifyCheckout]);
+  }, [searchParams, verifyCheckout, billing]);
 
   const business = data?.business ?? null;
   const posts = data?.posts ?? [];
