@@ -124,7 +124,7 @@ export default function SettingsPage() {
             </div>
             <Field label="Target audience"><Textarea className={area} value={f.targetCustomers} onChange={(e) => set("targetCustomers", e.target.value)} /></Field>
             <Field label="Main goal">
-              <div className="flex flex-wrap gap-2">{GOALS.map((g) => <Chip key={g.id} active={f.mainGoal === g.id} onClick={() => set("mainGoal", g.id)}>{g.emoji} {g.id}</Chip>)}</div>
+              <div className="flex flex-wrap gap-2">{GOALS.map((g) => <Chip key={g.id} active={f.mainGoal === g.id} onClick={() => set("mainGoal", g.id)}>{g.id}</Chip>)}</div>
             </Field>
             <Field label="Other goals" optional>
               <div className="flex flex-wrap gap-2">{GOALS.filter((g) => g.id !== f.mainGoal).map((g) => { const on = f.goals.includes(g.id); return <Chip key={g.id} active={on} onClick={() => set("goals", on ? f.goals.filter((x) => x !== g.id) : [...f.goals, g.id])}>{g.id}</Chip>; })}</div>

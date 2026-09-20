@@ -808,7 +808,7 @@ export default function Onboarding() {
                   <div className="flex flex-wrap gap-2">
                     {GOALS.map((g) => (
                       <Chip key={g.id} active={form.mainGoal === g.id} onClick={() => set("mainGoal", g.id)}>
-                        {g.emoji} {g.id}
+                        {g.id}
                       </Chip>
                     ))}
                   </div>
