@@ -227,8 +227,9 @@ async function runPlanPipeline(
       }),
     ]);
 
-    // 4. Background insights (included with the plan — no extra credits).
+    // 4. Sync subscription and run insights in background (both included — no extra credits).
     ctx.scheduler.runAfter(0, internal.ai.postPlanAnalysis, { businessId });
+    ctx.scheduler.runAfter(0, internal.stripe.internalSyncSubscription, { userId });
 
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);

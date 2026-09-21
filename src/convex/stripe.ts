@@ -20,7 +20,7 @@
 
 import Stripe from "stripe";
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { action } from "./_generated/server";
+import { action, internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
@@ -596,5 +596,63 @@ export const processWebhook = action({
     }
 
     return { ok: true };
+  },
+});
+
+/** Internal: Sync subscription for a user (called from scheduler during plan generation) */
+export const internalSyncSubscription = internalAction({
+  args: { userId: v.id("users") },
+  handler: async (ctx, { userId }): Promise<void> => {
+    if (!STRIPE_SECRET_KEY) {
+      console.warn("Stripe not configured, skipping subscription sync");
+      return;
+    }
+
+    try {
+      const stripe = new Stripe(STRIPE_SECRET_KEY);
+      const email = await ctx.runQuery(internal.billing.getUserEmail, { userId });
+      if (!email) {
+        console.warn("No email found for user, skipping subscription sync");
+        return;
+      }
+
+      const customers = await stripe.customers.list({
+        email,
+        limit: 100,
+      });
+
+      if (customers.data.length === 0) {
+        console.log("No Stripe customer found for email:", email);
+        return;
+      }
+
+      for (const customer of customers.data) {
+        const subs = await stripe.subscriptions.list({
+          customer: customer.id,
+          limit: 100,
+          status: "all",
+        });
+
+        for (const sub of subs.data) {
+          if (sub.status === "active" || sub.status === "trialing") {
+            try {
+              // Update metadata with userId if not already set
+              if (!sub.metadata?.userId) {
+                await stripe.subscriptions.update(sub.id, {
+                  metadata: { userId },
+                });
+              }
+              await syncSubscription(ctx, sub as unknown as SubscriptionSnapshot);
+              console.log("Subscription synced during plan generation:", sub.id);
+              return; // Stop after first active subscription
+            } catch (syncErr) {
+              console.error("Failed to sync subscription:", syncErr);
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Internal subscription sync failed:", err);
+    }
   },
 });
