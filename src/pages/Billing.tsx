@@ -38,11 +38,6 @@ const PLANS: {
   popular: PLAN_META[id].popular,
 }));
 
-const PLAN_EMOJI: Record<PlanId, string> = {
-  starter: "🌱",
-  growth: "📈",
-  pro: "🚀",
-};
 
 const fmtDate = (ts: number | null | undefined): string =>
   ts
@@ -307,14 +302,11 @@ export default function Billing() {
                     </span>
                   )}
 
-                  {/* Plan name and emoji */}
-                  <div className="flex items-start gap-3 mb-4">
-                    <span className="text-3xl">{PLAN_EMOJI[p.id]}</span>
-                    <div>
-                      <h3 className="font-serif text-2xl font-semibold text-ink">
-                        {p.name}
-                      </h3>
-                    </div>
+                  {/* Plan name */}
+                  <div className="mb-4">
+                    <h3 className="font-serif text-2xl font-semibold text-ink">
+                      {p.name}
+                    </h3>
                   </div>
 
                   {/* Price */}
@@ -403,7 +395,6 @@ export default function Billing() {
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
                       <h2 className="font-serif text-xl font-semibold tracking-tight text-ink">
-                        {PLAN_EMOJI[(sub.plan as PlanId) ?? "starter"]}{" "}
                         {currentPlan?.name ?? sub.plan}
                       </h2>
                       <span
