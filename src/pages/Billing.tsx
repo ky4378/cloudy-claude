@@ -81,6 +81,7 @@ export default function Billing() {
   const [cancelBusy, setCancelBusy] = useState(false);
   const [resumeBusy, setResumeBusy] = useState(false);
   const [verifying, setVerifying] = useState(false);
+  const [syncingSubscription, setSyncingSubscription] = useState(false);
   const manualSync = useAction(api.stripe.manualSyncSubscription);
 
   useEffect(() => {
@@ -179,6 +180,23 @@ export default function Billing() {
     } catch {
       setPortalBusy(false);
       toast.error("Couldn't open billing portal.");
+    }
+  };
+
+  const handleSyncSubscription = async () => {
+    setSyncingSubscription(true);
+    try {
+      const result = await manualSync();
+      if (result.ok) {
+        toast.success("✨ Subscription synced! Refreshing...");
+        setTimeout(() => window.location.reload(), 1000);
+      } else {
+        toast.error(result.message || "Couldn't sync subscription. Please try again.");
+      }
+    } catch (e) {
+      toast.error("Sync failed. Please try again or contact support.");
+    } finally {
+      setSyncingSubscription(false);
     }
   };
 
@@ -345,6 +363,27 @@ export default function Billing() {
               );
             })}
           </div>
+
+          {!sub && (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center lg:-ml-[20rem]">
+              <p className="mb-4 text-sm text-amber-900">
+                Already paid? If your subscription doesn't appear above, click below to sync it from Stripe.
+              </p>
+              <Button
+                onClick={handleSyncSubscription}
+                disabled={syncingSubscription}
+                className="rounded-xl"
+                variant="outline"
+              >
+                {syncingSubscription ? (
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                ) : (
+                  <CreditCard className="mr-2 size-4" />
+                )}
+                Sync my subscription
+              </Button>
+            </div>
+          )}
 
           <p className="flex items-center justify-center gap-1.5 text-center text-xs text-[#8f8b83] lg:-ml-[20rem]">
             <ShieldCheck className="size-3.5" />
