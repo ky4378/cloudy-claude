@@ -106,7 +106,6 @@ export default function Billing() {
             setTimeout(() => {
               window.location.href = "/dashboard/plan";
             }, 300);
-          }
           } else if (result.ok && !result.paid) {
             toast.error("Payment not completed. Please try again.");
           } else {
