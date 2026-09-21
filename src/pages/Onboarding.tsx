@@ -459,6 +459,13 @@ export default function Onboarding() {
 
     (async () => {
       try {
+        // Sync the paid subscription before generating so the plan uses the
+        // purchased tier's limits and the dashboard gate opens immediately.
+        const sessionId = params.get("session_id");
+        if (checkoutSuccess && sessionId) {
+          const verified = await verifyCheckout({ sessionId });
+          if (!verified.ok) console.warn("[AutoGen] Checkout verification failed; relying on webhook/background sync");
+        }
         await saveBusiness({
           businessName: formData.businessName,
           businessType: formData.businessType,
@@ -492,7 +499,7 @@ export default function Onboarding() {
         autoGenProcessed.current = false;
       }
     })();
-  }, [checkoutSuccess, myBusiness, saveBusiness, navigate]);
+  }, [checkoutSuccess, myBusiness, saveBusiness, verifyCheckout, params, navigate]);
 
   // Prefill from a saved business (returning users / edit mode).
   useEffect(() => {
