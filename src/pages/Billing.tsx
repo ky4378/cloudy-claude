@@ -15,7 +15,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router";
+import { useSearchParams, Link } from "react-router";
 import {
   redirectToCheckout,
   useLocalPrices,
@@ -455,8 +455,8 @@ export default function Billing() {
                       </div>
                     </div>
                   ) : (
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                      <p className="flex max-w-md items-start gap-2 text-sm leading-relaxed text-[#6e6a60]">
+                    <div className="flex flex-col gap-4">
+                      <p className="flex items-start gap-2 text-sm leading-relaxed text-[#6e6a60]">
                         <CalendarClock className="mt-0.5 size-4 shrink-0 text-forest-600" />
                         {cutoff?.withinCutoff && cutoff.renewsOn ? (
                           <>
@@ -479,14 +479,23 @@ export default function Billing() {
                           </>
                         )}
                       </p>
-                      <Button
-                        variant="outline"
-                        onClick={() => setConfirmingCancel(true)}
-                        disabled={cutoff?.withinCutoff ?? false}
-                        className="shrink-0 rounded-xl text-rose-600 hover:bg-rose-50 hover:text-rose-700"
-                      >
-                        Cancel subscription
-                      </Button>
+                      <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+                        <Button
+                          asChild
+                          variant="outline"
+                          className="rounded-xl"
+                        >
+                          <Link to="/dashboard/billing?plan=starter">Subscribe to another plan</Link>
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => setConfirmingCancel(true)}
+                          disabled={cutoff?.withinCutoff ?? false}
+                          className="shrink-0 rounded-xl text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                        >
+                          Cancel subscription
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </div>
