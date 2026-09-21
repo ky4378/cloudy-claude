@@ -80,10 +80,12 @@ export default function Billing() {
   const manualSync = useAction(api.stripe.manualSyncSubscription);
 
   useEffect(() => {
-    if (data === null) {
+    // Don't redirect to onboarding if we're processing a checkout success
+    const outcome = searchParams.get("checkout");
+    if (data === null && outcome !== "success") {
       window.location.href = "/onboarding";
     }
-  }, [data]);
+  }, [data, searchParams]);
 
   // Verify checkout and sync subscription immediately (no lag).
   useEffect(() => {

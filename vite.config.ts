@@ -1,16 +1,21 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [react()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
   },
   server: {
-    port: 5173,
+  host: 'cloudyco.cloud',
+  port: 5173,
+  hmr: {
+    overlay: false,
   },
+},
+
+
 });
