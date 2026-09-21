@@ -165,8 +165,10 @@ function SidebarContent({
 
 function PlanBanner({ data }: { data: AppData }) {
   const generateStrategy = useAction(api.plan.generateStrategy);
+  const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
   const status = data.business.planStatus;
+  const hasSubscription = data.usage?.hasSubscription ?? false;
   if (status === "generating") {
     return (
       <div className="mb-6 flex items-center gap-3 rounded-2xl border border-forest-200 bg-sage px-4 py-3 text-sm text-forest-800">
@@ -176,6 +178,10 @@ function PlanBanner({ data }: { data: AppData }) {
     );
   }
   const retry = async () => {
+    if (!hasSubscription) {
+      navigate("/dashboard/billing");
+      return;
+    }
     setBusy(true);
     try {
       await generateStrategy({ businessId: data.business._id });
@@ -203,10 +209,14 @@ function PlanBanner({ data }: { data: AppData }) {
         <Sparkles className="size-5 shrink-0 text-forest-600" />
         <div className="flex-1">
           <p className="font-medium text-ink">You don't have a 30-day plan yet.</p>
-          <p className="text-sm text-secondary-text">Generate one from your saved answers — it takes a minute or two.</p>
+          <p className="text-sm text-secondary-text">
+            {hasSubscription
+              ? "Generate one from your saved answers — it takes a minute or two."
+              : "Choose a plan to generate one from your saved answers."}
+          </p>
         </div>
         <Button className="rounded-full" onClick={retry} disabled={busy}>
-          {busy ? <Loader2 className="size-4 animate-spin" /> : "Generate my plan"}
+          {busy ? <Loader2 className="size-4 animate-spin" /> : hasSubscription ? "Generate my plan" : "Choose a plan"}
         </Button>
       </div>
     );

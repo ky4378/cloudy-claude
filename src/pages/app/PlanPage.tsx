@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { useAction } from "convex/react";
 import { CalendarDays, List, Loader2, Lock, RefreshCw, Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router";
 import { toast } from "sonner";
 
 const TYPE_FILTERS: ("All" | ContentType)[] = ["All", "Reel", "Carousel", "Photo Post", "Story Post"];
@@ -37,6 +38,7 @@ export default function PlanPage() {
   const { business, posts, usage } = useAppData();
   const regenerateCalendar = useAction(api.plan.regenerateCalendar);
   const regenerateDays = useAction(api.plan.regenerateDays);
+  const navigate = useNavigate();
   const [view, setView] = useState<"calendar" | "list">("calendar");
   const [type, setType] = useState<(typeof TYPE_FILTERS)[number]>("All");
   const [status, setStatus] = useState("all");
@@ -109,7 +111,7 @@ export default function PlanPage() {
                 </button>
               ))}
             </div>
-            <Button className="rounded-full" onClick={() => setConfirm(true)} disabled={busy !== null || business.planStatus === "generating"}>
+            <Button className="rounded-full" onClick={() => (usage?.hasSubscription ? setConfirm(true) : navigate("/dashboard/billing"))} disabled={busy !== null || business.planStatus === "generating"}>
               {busy === "plan" ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
               New 30-day plan
             </Button>
