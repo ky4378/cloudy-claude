@@ -220,7 +220,7 @@ export default function AppShell() {
   const { pathname } = useLocation();
   const [open, setOpen] = useState(false);
 
-  if (data === undefined) {
+  if (data === undefined || usage === undefined) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-paper">
         <Loader2 className="size-6 animate-spin text-secondary-text" />
@@ -228,7 +228,7 @@ export default function AppShell() {
     );
   }
   if (data === null) return <Navigate to="/onboarding" replace />;
-  if (!usage?.hasSubscription && !pathname.includes("/billing")) return <Navigate to="/dashboard/billing" replace />;
+  if (!usage.hasSubscription && !pathname.includes("/billing")) return <Navigate to="/dashboard/billing" replace />;
 
   const ctx: AppData = { business: data.business, posts: data.posts, usage };
 

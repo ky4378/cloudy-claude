@@ -103,15 +103,15 @@ export default function Billing() {
             manualSync()
               .then(() => {
                 console.log("Subscription synced successfully");
-                // Subscription synced, clear URL and show it
-                window.history.replaceState({}, "", "/dashboard/billing");
+                // Subscription synced, redirect to dashboard
+                window.location.href = "/dashboard";
               })
               .catch((err) => {
                 console.error("Sync error:", err);
                 toast.error("Subscription sync failed, refreshing...");
                 // Try refreshing the page to see if Stripe webhook synced it
                 setTimeout(() => {
-                  window.location.href = "/dashboard/billing";
+                  window.location.href = "/dashboard";
                 }, 1000);
               });
           } else if (result.ok && !result.paid) {
