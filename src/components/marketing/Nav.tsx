@@ -74,18 +74,18 @@ export function Nav() {
           {isAuthenticated ? (
             <Button asChild className="rounded-full px-5">
               <Link to="/dashboard">
-                Dashboard
+                Go to Dashboard
                 <ArrowRight className="size-4" />
               </Link>
             </Button>
           ) : (
             <>
               <Button asChild variant="ghost" className="rounded-full text-secondary-text">
-                <Link to="/login">Sign in</Link>
+                <Link to="/login">Log in</Link>
               </Button>
               <Button asChild className="rounded-full px-5">
                 <Link to="/signup">
-                  Get started
+                  Create an account
                   <ArrowRight className="size-4" />
                 </Link>
               </Button>
@@ -120,19 +120,19 @@ export function Nav() {
             {isAuthenticated ? (
               <Button asChild className="col-span-2 rounded-xl">
                 <Link to="/dashboard" onClick={() => setOpen(false)}>
-                  Dashboard
+                  Go to Dashboard
                 </Link>
               </Button>
             ) : (
               <>
                 <Button asChild variant="outline" className="rounded-xl">
                   <Link to="/login" onClick={() => setOpen(false)}>
-                    Sign in
+                    Log in
                   </Link>
                 </Button>
                 <Button asChild className="rounded-xl">
                   <Link to="/signup" onClick={() => setOpen(false)}>
-                    Get started
+                    Create an account
                   </Link>
                 </Button>
               </>
