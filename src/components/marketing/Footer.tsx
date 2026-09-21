@@ -4,7 +4,7 @@ import { AnchorLink } from "./Nav";
 
 const COLUMNS: {
   title: string;
-  links: { label: string; to?: string; anchor?: string }[];
+  links: { label: string; to?: string; anchor?: string; href?: string }[];
 }[] = [
   {
     title: "Product",
@@ -19,6 +19,7 @@ const COLUMNS: {
     links: [
       { label: "About", to: "/about" },
       { label: "FAQ", anchor: "faq" },
+      { label: "Contact", href: "mailto:cloudyco.support@gmail.com" },
     ],
   },
   {
@@ -54,6 +55,10 @@ export function Footer() {
                       <Link to={l.to} className={linkClass}>
                         {l.label}
                       </Link>
+                    ) : l.href ? (
+                      <a href={l.href} className={linkClass}>
+                        {l.label}
+                      </a>
                     ) : (
                       <AnchorLink id={l.anchor ?? ""} className={linkClass}>
                         {l.label}
