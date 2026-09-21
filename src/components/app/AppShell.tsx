@@ -24,7 +24,7 @@ import {
   Sun,
 } from "lucide-react";
 import { useState } from "react";
-import { Link, Navigate, NavLink, Outlet, useNavigate } from "react-router";
+import { Link, Navigate, NavLink, Outlet, useNavigate, useLocation } from "react-router";
 import { toast } from "sonner";
 import { errorMessage, type AppData, type Usage } from "./useAppData";
 
@@ -217,6 +217,7 @@ function PlanBanner({ data }: { data: AppData }) {
 export default function AppShell() {
   const data = useQuery(api.businesses.myBusiness);
   const usage = useQuery(api.billing.getUsage);
+  const { pathname } = useLocation();
   const [open, setOpen] = useState(false);
 
   if (data === undefined) {
@@ -227,7 +228,7 @@ export default function AppShell() {
     );
   }
   if (data === null) return <Navigate to="/onboarding" replace />;
-  if (!usage?.hasSubscription) return <Navigate to="/dashboard/billing" replace />;
+  if (!usage?.hasSubscription && !pathname.includes("/billing")) return <Navigate to="/dashboard/billing" replace />;
 
   const ctx: AppData = { business: data.business, posts: data.posts, usage };
 
