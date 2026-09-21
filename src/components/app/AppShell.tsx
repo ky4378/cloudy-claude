@@ -228,7 +228,8 @@ export default function AppShell() {
     );
   }
   if (data === null) return <Navigate to="/onboarding" replace />;
-  if (usage && !usage.hasSubscription && !pathname.includes("/billing")) return <Navigate to="/dashboard/billing" replace />;
+  // Allow plan generation page even without subscription (sync happens during generation)
+  if (usage && !usage.hasSubscription && !pathname.includes("/billing") && !pathname.includes("/plan")) return <Navigate to="/dashboard/billing" replace />;
 
   const ctx: AppData = { business: data.business, posts: data.posts, usage };
 

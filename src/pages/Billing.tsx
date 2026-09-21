@@ -95,23 +95,18 @@ export default function Billing() {
         .then((result) => {
           if (result.ok && result.paid) {
             toast.success("Welcome aboard — your subscription is active ✨");
-            // Sync subscription immediately and wait for Convex to update
-            manualSync()
-              .then(() => {
-                console.log("Subscription synced successfully");
-                // Add delay to ensure Convex has fresh data before redirecting
-                setTimeout(() => {
-                  window.location.href = "/dashboard";
-                }, 500);
-              })
-              .catch((err) => {
-                console.error("Sync error:", err);
-                toast.error("Subscription sync failed, refreshing...");
-                // Try refreshing the page to see if Stripe webhook synced it
-                setTimeout(() => {
-                  window.location.href = "/dashboard";
-                }, 1500);
-              });
+            // Sync subscription immediately in background
+            // Don't wait - redirect to plan generation page so subscription can sync while plan generates
+            manualSync().catch((err) => {
+              console.error("Sync error:", err);
+              // Sync will also happen via Stripe webhook and background task during plan generation
+            });
+            // Redirect to plan page to trigger plan generation
+            // Subscription will sync automatically in background during plan generation
+            setTimeout(() => {
+              window.location.href = "/dashboard/plan";
+            }, 300);
+          }
           } else if (result.ok && !result.paid) {
             toast.error("Payment not completed. Please try again.");
           } else {
