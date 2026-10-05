@@ -113,11 +113,7 @@ function Hero({ authed }: { authed: boolean }) {
       <div className="hero-grid pointer-events-none absolute inset-x-0 top-0 h-[760px]" />
       <div className="relative mx-auto max-w-6xl px-5">
         <FadeUp className="mx-auto max-w-3xl text-center">
-          <span className="glass-chip inline-flex items-center gap-2 px-4 py-1.5 text-xs font-semibold text-forest-700">
-            <span className="text-forest-600">✦</span>
-            New — AI 30-day marketing plans for local businesses
-          </span>
-          <h1 className="mt-7 font-serif text-5xl font-medium leading-[1.02] tracking-tight text-ink sm:text-6xl md:text-7xl">
+          <h1 className="font-serif text-5xl font-medium leading-[1.02] tracking-tight text-ink sm:text-6xl md:text-7xl">
             Your entire month of <span className="text-forest-gradient">marketing</span>, planned by AI.
           </h1>
           <p className="mx-auto mt-7 max-w-2xl text-base leading-relaxed text-secondary-text md:text-lg">
