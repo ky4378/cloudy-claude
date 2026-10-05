@@ -118,7 +118,7 @@ export function SidebarContent({
           Media library
         </Link>
         <Link
-          to="/billing"
+          to="/dashboard/billing"
           onClick={onNavigate}
           className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-ink transition-colors hover:bg-forest-100 hover:text-forest-800"
         >

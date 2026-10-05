@@ -217,7 +217,7 @@ export default function DashboardHome() {
         {/* Performance */}
         <Card eyebrow="Performance" title={usage?.limits.performanceInsights === false ? "Performance insights" : "Content mix"}>
           {usage?.limits.performanceInsights === false ? (
-            <EmptyState icon={<Lock className="size-5" />} title="Available on Growth and Pro" description="Track what performs and let Cloudy tune your next month." action={<Button asChild size="sm" className="rounded-full"><Link to="/billing">Upgrade</Link></Button>} />
+            <EmptyState icon={<Lock className="size-5" />} title="Available on Growth and Pro" description="Track what performs and let Cloudy tune your next month." action={<Button asChild size="sm" className="rounded-full"><Link to="/dashboard/billing">Upgrade</Link></Button>} />
           ) : (
             <div className="space-y-2">
               {Object.entries(stats.mix).map(([type, n]) => (

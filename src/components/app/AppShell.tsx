@@ -58,7 +58,7 @@ export function CreditMeter({ usage }: { usage: Usage | null | undefined }) {
       </div>
       <div className="mt-3 flex items-center justify-between text-xs">
         <span className="text-secondary-text">{usage.planName} plan</span>
-        <Link to="/billing" className="font-semibold text-forest-700 hover:underline">
+        <Link to="/dashboard/billing" className="font-semibold text-forest-700 hover:underline">
           {usage.plan === "pro" ? "Manage" : "Upgrade"}
         </Link>
       </div>

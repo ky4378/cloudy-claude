@@ -375,7 +375,7 @@ export const createPortalSession = action({
     const stripe = getStripe();
     const session = await stripe.billingPortal.sessions.create({
       customer: sub.stripeCustomerId,
-      return_url: `${origin}/billing`,
+      return_url: `${origin}/dashboard/billing`,
     });
     return { url: session.url };
   },
