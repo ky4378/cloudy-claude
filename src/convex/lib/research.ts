@@ -421,10 +421,23 @@ async function researchInstagramViaSession(
       signal: AbortSignal.timeout(TIMEOUT_MS),
       redirect: "follow",
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.warn(
+        `[IG research] session lookup for @${handle} failed: HTTP ${res.status}` +
+          (res.status === 401 || res.status === 403 || res.url.includes("/accounts/login")
+            ? " (session expired or cookies mismatched — refresh IG_SESSION_ID and IG_CSRF_TOKEN)"
+            : res.status === 429
+              ? " (rate limited by Instagram)"
+              : ""),
+      );
+      return null;
+    }
     const data = (await res.json()) as unknown;
     const user = dig(data, "data", "user") as Rec | undefined;
-    if (!user) return null;
+    if (!user) {
+      console.warn(`[IG research] session lookup for @${handle}: no user in response`);
+      return null;
+    }
 
     const lines: string[] = [];
     lines.push(`INSTAGRAM (@${handle}) — via session`);
@@ -473,15 +486,24 @@ async function researchInstagram(
   // Official Meta Business Discovery first (free + ToS-compliant) when the
   // owner has connected their Instagram account.
   const graph = await researchInstagramViaGraph(rawHandle, opts);
-  if (graph) return graph;
+  if (graph) {
+    console.log(`[IG research] @${handle}: via Meta Graph API`);
+    return graph;
+  }
 
   // Session cookies — reliable profile reading via a real Instagram login.
   const session = await researchInstagramViaSession(rawHandle);
-  if (session) return session;
+  if (session) {
+    console.log(`[IG research] @${handle}: via session cookies`);
+    return session;
+  }
 
   // Apify next — reliable public-profile scraping when a token is configured.
   const apify = await researchInstagramViaApify(rawHandle);
-  if (apify) return apify;
+  if (apify) {
+    console.log(`[IG research] @${handle}: via Apify`);
+    return apify;
+  }
 
   // Run both strategies in parallel; take whichever finds data first.
   const attempts: Promise<string | null>[] = [
@@ -530,8 +552,12 @@ async function researchInstagram(
 
   const results = await Promise.allSettled(attempts);
   for (const r of results) {
-    if (r.status === "fulfilled" && r.value) return r.value;
+    if (r.status === "fulfilled" && r.value) {
+      console.log(`[IG research] @${handle}: via public page fallback`);
+      return r.value;
+    }
   }
+  console.warn(`[IG research] @${handle}: no data from any method`);
   return null;
 }
 
