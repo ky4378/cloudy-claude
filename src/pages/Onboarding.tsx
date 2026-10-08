@@ -134,16 +134,19 @@ function Chip({
 function Field({
   label,
   hint,
+  hintAbove,
   optional,
   recommended,
   children,
 }: {
   label: string;
   hint?: string;
+  hintAbove?: boolean;
   optional?: boolean;
   recommended?: boolean;
   children: React.ReactNode;
 }) {
+  const hintEl = hint ? <p className="text-xs text-secondary-text">{hint}</p> : null;
   return (
     <div className="space-y-2">
       <Label className="text-sm font-medium text-ink">
@@ -151,8 +154,9 @@ function Field({
         {recommended && <span className="ml-1.5 text-xs font-normal text-secondary-text">Recommended for better results</span>}
         {optional && <span className="ml-1.5 text-xs font-normal text-secondary-text">Optional</span>}
       </Label>
+      {hintAbove && hintEl}
       {children}
-      {hint && <p className="text-xs text-secondary-text">{hint}</p>}
+      {!hintAbove && hintEl}
     </div>
   );
 }
@@ -877,7 +881,8 @@ export default function Onboarding() {
               <>
                 <Field
                   label="What products or services do you offer?"
-                  hint="For best results, use your exact product or service names, one per line, and add a short description where it helps (e.g. “Honey lavender latte — our best-seller, oat milk by default”). The more specific you are, the more your plan will feature what you actually sell. You can also upload a menu photo to extract them automatically."
+                  hint="For best results, use your exact product or service names, one per line, and add a short description where it helps (e.g. “Honey lavender latte — our best-seller, oat milk by default”). The more specific you are, the more your plan will feature what you actually sell."
+                  hintAbove
                 >
                   <MenuUploadField
                     value={form.products}
