@@ -875,11 +875,14 @@ export default function Onboarding() {
 
             {step === 3 && (
               <>
-                <Field label="What products or services do you offer?" hint="Type them or upload a menu photo to extract them automatically. Encouraged for best results.">
+                <Field
+                  label="What products or services do you offer?"
+                  hint="For best results, use your exact product or service names, one per line, and add a short description where it helps (e.g. “Honey lavender latte — our best-seller, oat milk by default”). The more specific you are, the more your plan will feature what you actually sell. You can also upload a menu photo to extract them automatically."
+                >
                   <MenuUploadField
                     value={form.products}
                     onChange={(v) => set("products", v)}
-                    placeholder={"Signature lattes\nFresh pastries\nSingle-origin beans"}
+                    placeholder={"Honey lavender latte — our best-seller\nAlmond croissant — baked fresh every morning\nSingle-origin Ethiopian beans — 250g bag"}
                   />
                 </Field>
                 <Field label="What makes your business different?" optional>
