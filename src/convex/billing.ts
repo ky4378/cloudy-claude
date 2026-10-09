@@ -149,7 +149,11 @@ export const getUsage = query({
         limits: getLimitsFor("starter"),
         costs: CREDIT_COSTS,
         credits: { used: 0, limit: getLimitsFor("starter").credits, remaining: getLimitsFor("starter").credits },
-        plans: { used: 0, limit: getLimitsFor("starter").plans, remaining: getLimitsFor("starter").plans },
+        regenerations: {
+          used: 0,
+          limit: getLimitsFor("starter").regenerateDays,
+          remaining: getLimitsFor("starter").regenerateDays,
+        },
         usage: emptyUsage(Date.now()),
       };
     }
@@ -172,10 +176,10 @@ export const getUsage = query({
         limit: limits.credits,
         remaining: Math.max(0, limits.credits - usage.credits),
       },
-      plans: {
-        used: usage.plans,
-        limit: limits.plans,
-        remaining: Math.max(0, limits.plans - usage.plans),
+      regenerations: {
+        used: usage.regenerations,
+        limit: limits.regenerateDays,
+        remaining: Math.max(0, limits.regenerateDays - usage.regenerations),
       },
       usage,
     };
@@ -320,11 +324,15 @@ export const canUseFeature = internalQuery({
     }
     const limits = getLimitsFor(sub.plan);
     const usage = currentUsage(sub);
-    if (feature === "plans" && usage.plans >= limits.plans) {
+    if (feature === "regenerations" && usage.regenerations + n > limits.regenerateDays) {
+      const left = Math.max(0, limits.regenerateDays - usage.regenerations);
       return {
         ok: false as const,
         code: "limit" as const,
-        reason: `You've used ${usage.plans}/${limits.plans} 30-day plans this month. Upgrade your plan to generate more.`,
+        reason:
+          left === 0
+            ? `You've used all ${limits.regenerateDays} of your regenerate days this month. Upgrade your plan for more.`
+            : `That's ${n} days but you only have ${left} of ${limits.regenerateDays} regenerate days left this month. Pick fewer days or upgrade your plan.`,
       };
     }
     if (feature === "coachMessages" && usage.coachMessages >= limits.coachMessages) {

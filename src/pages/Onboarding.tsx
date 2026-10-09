@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/convex/_generated/api";
+import { PLAN_HIGHLIGHTS, PLAN_META } from "@/convex/lib/planLimits";
 import { BUSINESS_TYPES, GOALS } from "@/convex/lib/strategy";
 import { cn } from "@/lib/utils";
 import { usePageMeta } from "@/hooks/use-page-meta";
@@ -697,11 +698,9 @@ export default function Onboarding() {
   ];
 
   const planNotice =
-    usage && usage.hasSubscription && usage.plans.remaining === 0
-      ? "You've used all of this month's 30-day plans."
-      : usage && !usage.hasSubscription
-        ? "You'll complete payment via Stripe after clicking 'Generate my 30-day plan'."
-        : null;
+    usage && !usage.hasSubscription
+      ? "You'll complete payment via Stripe after clicking 'Generate my 30-day plan'."
+      : null;
 
   const current = STEPS[step];
 
@@ -1030,10 +1029,11 @@ export default function Onboarding() {
                 <div className="grid md:grid-cols-3 gap-6 mb-8">
                   {(['starter', 'growth', 'pro'] as const).map((planId) => {
                     const plan = {
-                      starter: { name: 'Starter', price: 19, features: ['100 AI credits / month', '1 full 30-day marketing plan', 'AI captions, hashtags & Reel ideas', 'Basic Reel scripts, trends & competitors', 'Regenerate individual posts'] },
-                      growth: { name: 'Growth', price: 28, features: ['300 AI credits / month', '3 full 30-day marketing plans', 'Advanced Reel scripts, trends & competitors', 'Performance insights', 'Regenerate entire days', 'Priority AI processing'], popular: true },
-                      pro: { name: 'Pro', price: 55, features: ['750 AI credits / month', '5 full 30-day marketing plans', 'Full marketing strategy', 'Regenerate entire weeks', 'Priority AI processing', 'Early access to new features'] },
-                    }[planId];
+                      name: PLAN_META[planId].name,
+                      price: PLAN_META[planId].price,
+                      popular: PLAN_META[planId].popular,
+                      features: PLAN_HIGHLIGHTS[planId],
+                    };
 
                     return (
                       <div

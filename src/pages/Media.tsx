@@ -27,7 +27,6 @@ export default function Media() {
   const supabaseStatus = useQuery(api.supabaseStatus.status);
   const uploadImage = useAction(api.supabase.uploadImage);
   const deleteImage = useAction(api.supabase.deleteImage);
-  const regenerateCalendar = useAction(api.plan.regenerateCalendar);
 
   const [selected, setSelected] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -54,16 +53,6 @@ export default function Media() {
     setupNeededState ||
     (supabaseStatus !== undefined && supabaseStatus.configured === false);
 
-
-  const handleRegenerate = async () => {
-    if (!business) return;
-    try {
-      await regenerateCalendar({ businessId: business._id });
-      toast.success("Fresh 30-day plan generated ✨");
-    } catch {
-      toast.error("Couldn't regenerate the plan. Try again.");
-    }
-  };
 
   const handleFile = (file: File | undefined) => {
     if (!file) return;

@@ -16,7 +16,7 @@ import { action, type ActionCtx } from "./_generated/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import { formatDate, type BusinessProfile } from "./lib/strategy";
+import { formatDate, todayString, type BusinessProfile } from "./lib/strategy";
 import { researchProfiles } from "./lib/research";
 import {
   buildCalendarFallback,
@@ -25,7 +25,7 @@ import {
   generateRangeWithAI,
 } from "./lib/planGen";
 import { generateStrategyAI, strategyNote } from "./lib/insights";
-import { getLimitsFor, regenerationDays } from "./lib/planLimits";
+import { getLimitsFor } from "./lib/planLimits";
 import { fetchLiveTrends, formatTrendsPrompt } from "./lib/trends";
 
 // ---------------------------------------------------------------------------
@@ -286,11 +286,26 @@ export const generateStrategy = action({
   },
 });
 
-/** Regenerate the whole 30-day plan (a fresh month starting today). */
+/**
+ * Start a fresh 30-day plan. Included with every subscription (no quota), but
+ * only once the current month's last day has been reached — inside the month,
+ * users regenerate individual days instead.
+ */
 export const regenerateCalendar = action({
   args: { businessId: v.id("businesses") },
   handler: async (ctx, { businessId }): Promise<void> => {
     const { userId, business } = await requireBusiness(ctx, businessId);
+    const posts = await ctx.runQuery(internal.businesses.getPostsByBusiness, { businessId });
+    const lastDate = posts.reduce((max, p) => (p.date > max ? p.date : max), "");
+    if (lastDate && todayString() < lastDate) {
+      const pretty = new Date(`${lastDate}T00:00:00`).toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+      });
+      throw new Error(
+        `Your current month runs until ${pretty}. Until then, tick the days you want rewritten and regenerate those — a fresh month is included once this one ends.`,
+      );
+    }
     await runPlanPipeline(ctx, userId, business);
   },
 });
@@ -339,9 +354,85 @@ export const regeneratePost = action({
 });
 
 /**
- * Regenerate a run of consecutive days (a day or a week). The maximum run is
- * set by the plan tier (Starter: 1 post, Growth: 1 day, Pro: 7 days).
+ * Regenerate an arbitrary set of days. Each day draws one unit from the
+ * tier's monthly regenerate-days quota. Consecutive days are grouped so one
+ * AI call covers each contiguous run.
  */
+async function regenerateDayIndexes(
+  ctx: ActionCtx,
+  userId: Id<"users">,
+  business: Doc<"businesses">,
+  dayIndexes: number[],
+): Promise<void> {
+  const days = [...new Set(dayIndexes.filter((d) => Number.isInteger(d) && d >= 0 && d < 30))].sort(
+    (a, b) => a - b,
+  );
+  if (days.length === 0) throw new Error("Pick at least one day to regenerate.");
+
+  const featCheck = await ctx.runQuery(internal.billing.canUseFeature, {
+    userId,
+    feature: "regenerations",
+    units: days.length,
+  });
+  if (!featCheck.ok) throw new Error(featCheck.reason);
+
+  const businessId = business._id;
+  const anchor = business.planStartDate ?? formatDate(new Date());
+  const profile = toProfile(business);
+  const excludedIdeas = await ctx.runQuery(internal.businesses.getExcludedContentIdeas, {
+    businessId,
+  });
+  const liveTrendsPrompt = await fetchAndCacheLiveTrends(ctx, business.businessType);
+  const note = business.strategy ? strategyNote(business.strategy) : undefined;
+
+  const runs: { from: number; count: number }[] = [];
+  for (const d of days) {
+    const last = runs[runs.length - 1];
+    if (last && last.from + last.count === d) last.count += 1;
+    else runs.push({ from: d, count: 1 });
+  }
+
+  const plans = (
+    await Promise.all(
+      runs.map(async ({ from, count }) => {
+        const opts = {
+          startDate: anchor,
+          salt: Math.floor(Date.now() / 60000) + from,
+          strategyNote: note,
+          excludedIdeas,
+          liveTrendsPrompt,
+        };
+        const ai = await generateRangeWithAI(profile, from, count, opts);
+        return ai ?? Array.from({ length: count }, (_, i) => buildDayFallback(profile, from + i, opts));
+      }),
+    )
+  ).flat();
+
+  const posts = await ctx.runQuery(internal.businesses.getPostsByBusiness, { businessId });
+  for (const plan of plans) {
+    const existing = posts.find((p) => p.dayIndex === plan.dayIndex);
+    if (existing) {
+      await ctx.runMutation(internal.businesses.patchPost, { postId: existing._id, plan });
+    }
+  }
+  await ctx.runMutation(internal.billing.incrementUsage, {
+    userId,
+    feature: "regenerations",
+    units: days.length,
+    businessId,
+  });
+}
+
+/** Regenerate the days the user ticked on the plan page. */
+export const regenerateSelectedDays = action({
+  args: { businessId: v.id("businesses"), dayIndexes: v.array(v.number()) },
+  handler: async (ctx, { businessId, dayIndexes }): Promise<void> => {
+    const { userId, business } = await requireBusiness(ctx, businessId);
+    await regenerateDayIndexes(ctx, userId, business, dayIndexes);
+  },
+});
+
+/** Regenerate a run of consecutive days. */
 export const regenerateDays = action({
   args: {
     businessId: v.id("businesses"),
@@ -350,56 +441,12 @@ export const regenerateDays = action({
   },
   handler: async (ctx, { businessId, fromDayIndex, count }): Promise<void> => {
     const { userId, business } = await requireBusiness(ctx, businessId);
-    const sub = await ctx.runQuery(internal.billing.getSubscriptionByUser, { userId });
-    const maxDays = regenerationDays(sub?.plan);
-    const n = Math.max(1, Math.min(count, maxDays, 30 - fromDayIndex));
-    if (count > maxDays) {
-      throw new Error(
-        maxDays === 1
-          ? "Your plan regenerates one day at a time. Upgrade to Pro to regenerate whole weeks."
-          : `Your plan can regenerate up to ${maxDays} days at once.`,
-      );
-    }
-
-    const featCheck = await ctx.runQuery(internal.billing.canUseFeature, {
+    const n = Math.max(1, Math.min(count, 30 - fromDayIndex));
+    await regenerateDayIndexes(
+      ctx,
       userId,
-      feature: "regenerations",
-      units: n,
-    });
-    if (!featCheck.ok) throw new Error(featCheck.reason);
-
-    const anchor = business.planStartDate ?? formatDate(new Date());
-    const salt = Math.floor(Date.now() / 60000) + fromDayIndex;
-    const profile = toProfile(business);
-    const excludedIdeas = await ctx.runQuery(internal.businesses.getExcludedContentIdeas, {
-      businessId,
-    });
-    const liveTrendsPrompt = await fetchAndCacheLiveTrends(ctx, business.businessType);
-    const opts = {
-      startDate: anchor,
-      salt,
-      strategyNote: business.strategy ? strategyNote(business.strategy) : undefined,
-      excludedIdeas,
-      liveTrendsPrompt,
-    };
-
-    const aiPlans = await generateRangeWithAI(profile, fromDayIndex, n, opts);
-    const plans =
-      aiPlans ??
-      Array.from({ length: n }, (_, i) => buildDayFallback(profile, fromDayIndex + i, opts));
-
-    const posts = await ctx.runQuery(internal.businesses.getPostsByBusiness, { businessId });
-    for (const plan of plans) {
-      const existing = posts.find((p) => p.dayIndex === plan.dayIndex);
-      if (existing) {
-        await ctx.runMutation(internal.businesses.patchPost, { postId: existing._id, plan });
-      }
-    }
-    await ctx.runMutation(internal.billing.incrementUsage, {
-      userId,
-      feature: "regenerations",
-      units: n,
-      businessId,
-    });
+      business,
+      Array.from({ length: n }, (_, i) => fromDayIndex + i),
+    );
   },
 });

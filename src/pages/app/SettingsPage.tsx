@@ -155,8 +155,7 @@ export default function SettingsPage() {
                   {usage.periodEnd && <span className="text-xs text-secondary-text">Renews {new Date(usage.periodEnd).toLocaleDateString()}</span>}
                 </div>
                 <Row k="AI credits" v={`${usage.credits.used} / ${usage.credits.limit} used`} />
-                <Row k="30-day plans" v={`${usage.plans.used} / ${usage.plans.limit} this month`} />
-                <Row k="Regeneration" v={usage.limits.regeneration === "week" ? "Entire weeks" : usage.limits.regeneration === "day" ? "Entire days" : "Individual posts"} />
+                <Row k="Regenerate days" v={`${usage.regenerations.used} / ${usage.regenerations.limit} used this month`} />
                 <Button asChild variant="outline" className="mt-2 w-full rounded-full"><Link to="/dashboard/billing"><CreditCard className="size-4" />{usage.plan === "pro" && !usage.isTrial ? "Manage billing" : "Upgrade plan"}</Link></Button>
               </div>
             ) : <p className="text-sm text-secondary-text">Loading…</p>}

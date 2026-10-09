@@ -29,7 +29,6 @@ export default function Feedback() {
   const data = useQuery(api.businesses.myBusiness);
   const history = useQuery(api.feedback.getMyFeedback);
   const submitFeedback = useMutation(api.feedback.submitFeedback);
-  const regenerateCalendar = useAction(api.plan.regenerateCalendar);
   const [rating, setRating] = useState<number | null>(null);
   const [whatWorks, setWhatWorks] = useState("");
   const [improve, setImprove] = useState("");
@@ -41,16 +40,6 @@ export default function Feedback() {
   const posts = data?.posts ?? [];
   const submissions = history?.submissions ?? [];
 
-
-  const handleRegenerate = async () => {
-    if (!business) return;
-    try {
-      await regenerateCalendar({ businessId: business._id });
-      toast.success("Fresh 30-day plan generated ✨");
-    } catch {
-      toast.error("Couldn't regenerate the plan. Try again.");
-    }
-  };
 
   const handleSubmit = async () => {
     if (rating === null || submitting) return;

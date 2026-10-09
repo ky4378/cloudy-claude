@@ -12,17 +12,14 @@
 export type PlanId = "starter" | "growth" | "pro";
 
 export type Depth = "basic" | "advanced" | "full";
-export type RegenerationScope = "post" | "day" | "week";
 
 export interface PlanLimits {
   /** AI credits per month — every AI action costs credits (see CREDIT_COSTS). */
   credits: number;
-  /** Full 30-day marketing plans per month. */
-  plans: number;
+  /** Days of the plan that can be regenerated per month (any days, any batch size). */
+  regenerateDays: number;
   reelScripts: Depth;
   trendInsights: Depth;
-  /** The largest unit of the plan that can be regenerated in one go. */
-  regeneration: RegenerationScope;
   performanceInsights: boolean;
   marketingStrategy: Depth;
   priorityProcessing: boolean;
@@ -67,10 +64,9 @@ export const PLAN_ORDER: PlanId[] = ["starter", "growth", "pro"];
 export const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
   starter: {
     credits: 100,
-    plans: 1,
+    regenerateDays: 15,
     reelScripts: "basic",
     trendInsights: "basic",
-    regeneration: "post",
     performanceInsights: false,
     marketingStrategy: "basic",
     priorityProcessing: false,
@@ -79,10 +75,9 @@ export const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
   },
   growth: {
     credits: 300,
-    plans: 3,
+    regenerateDays: 30,
     reelScripts: "advanced",
     trendInsights: "advanced",
-    regeneration: "day",
     performanceInsights: true,
     marketingStrategy: "advanced",
     priorityProcessing: true,
@@ -91,10 +86,9 @@ export const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
   },
   pro: {
     credits: 750,
-    plans: 5,
+    regenerateDays: 60,
     reelScripts: "advanced",
     trendInsights: "advanced",
-    regeneration: "week",
     performanceInsights: true,
     marketingStrategy: "full",
     priorityProcessing: true,
@@ -119,7 +113,7 @@ export type UsageFeature =
 export const CREDIT_COSTS: Record<UsageFeature, number> = {
   plans: 30, // strategy + full 30-day plan
   strategy: 5, // refresh the marketing strategy on its own
-  regenerations: 2, // one post; a day costs the same, a week costs 7×
+  regenerations: 0, // regenerated days draw from their own monthly quota, not credits
   captions: 1,
   hashtags: 1,
   reelIdeas: 2,
@@ -145,7 +139,7 @@ export const USAGE_FEATURES: UsageFeature[] = [
 export const FEATURE_LABEL: Record<UsageFeature, string> = {
   plans: "30-day plans",
   strategy: "Strategy refreshes",
-  regenerations: "Content regenerations",
+  regenerations: "Regenerated days",
   captions: "AI captions",
   hashtags: "AI hashtags",
   reelIdeas: "Reel ideas",
@@ -168,9 +162,10 @@ export const PRICING_ROWS: PricingRow[] = [
     highlight: true,
     values: { starter: "100 / month", growth: "300 / month", pro: "750 / month" },
   },
+  { label: "Fresh 30-day plan every month", values: { starter: true, growth: true, pro: true } },
   {
-    label: "30-day marketing plans",
-    values: { starter: "1 / month", growth: "3 / month", pro: "5 / month" },
+    label: "Regenerate days",
+    values: { starter: "15 / month", growth: "30 / month", pro: "60 / month" },
   },
   {
     label: "AI coach messages",
@@ -182,10 +177,7 @@ export const PRICING_ROWS: PricingRow[] = [
   { label: "Reel ideas", values: { starter: true, growth: true, pro: true } },
   { label: "Reel scripts", values: { starter: "Basic", growth: "Advanced", pro: "Advanced" } },
   { label: "Trend insights", values: { starter: "Basic", growth: "Advanced", pro: "Advanced" } },
-  {
-    label: "Content regeneration",
-    values: { starter: "Individual posts", growth: "Entire days", pro: "Entire weeks" },
-  },
+  { label: "Pick any days to regenerate", values: { starter: true, growth: true, pro: true } },
   { label: "Performance insights", values: { starter: false, growth: true, pro: true } },
   { label: "Marketing strategy", values: { starter: "Basic", growth: "Advanced", pro: "Full" } },
   { label: "Personalized recommendations", values: { starter: true, growth: true, pro: true } },
@@ -197,27 +189,27 @@ export const PRICING_ROWS: PricingRow[] = [
 export const PLAN_HIGHLIGHTS: Record<PlanId, string[]> = {
   starter: [
     "100 AI credits / month",
-    "1 full 30-day marketing plan",
+    "A fresh 30-day plan every month",
+    "Regenerate up to 15 days / month",
     "10 AI coach messages / month",
     "AI captions, hashtags & Reel ideas",
     "Basic Reel scripts & trend insights",
-    "Regenerate individual posts",
   ],
   growth: [
     "300 AI credits / month",
-    "3 full 30-day marketing plans",
+    "A fresh 30-day plan every month",
+    "Regenerate up to 30 days / month",
     "20 AI coach messages / month",
     "Advanced Reel scripts & trend insights",
     "Performance insights",
-    "Regenerate entire days",
     "Priority AI processing",
   ],
   pro: [
     "750 AI credits / month",
-    "5 full 30-day marketing plans",
+    "A fresh 30-day plan every month",
+    "Regenerate up to 60 days / month",
     "40 AI coach messages / month",
     "Full marketing strategy",
-    "Regenerate entire weeks",
     "Priority AI processing",
     "Early access to new features",
   ],
@@ -232,10 +224,4 @@ export function toPlanId(raw?: string | null): PlanId {
 /** Return the limits for a plan, defaulting to starter if unknown. */
 export function getLimitsFor(raw?: string | null): PlanLimits {
   return PLAN_LIMITS[toPlanId(raw)];
-}
-
-/** How many days a single regeneration may cover on this plan. */
-export function regenerationDays(raw?: string | null): number {
-  const scope = getLimitsFor(raw).regeneration;
-  return scope === "week" ? 7 : 1;
 }
