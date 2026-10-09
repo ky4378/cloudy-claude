@@ -154,6 +154,8 @@ export const getUsage = query({
           limit: getLimitsFor("starter").regenerateDays,
           remaining: getLimitsFor("starter").regenerateDays,
         },
+        // Kept so browsers still running the previous frontend bundle don't crash.
+        plans: { used: 0, limit: 1, remaining: 1 },
         usage: emptyUsage(Date.now()),
       };
     }
@@ -181,6 +183,8 @@ export const getUsage = query({
         limit: limits.regenerateDays,
         remaining: Math.max(0, limits.regenerateDays - usage.regenerations),
       },
+      // Kept so browsers still running the previous frontend bundle don't crash.
+      plans: { used: usage.plans, limit: 1, remaining: Math.max(0, 1 - usage.plans) },
       usage,
     };
   },
