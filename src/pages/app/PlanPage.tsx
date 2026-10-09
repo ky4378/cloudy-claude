@@ -306,9 +306,6 @@ export default function PlanPage() {
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            <Button variant="outline" className="rounded-full" onClick={clearPicked} disabled={busy !== null}>
-              Clear
-            </Button>
             {overQuota ? (
               <Button className="rounded-full" onClick={() => navigate("/dashboard/billing")}>
                 Upgrade
