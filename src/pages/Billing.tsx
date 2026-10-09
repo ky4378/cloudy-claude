@@ -204,27 +204,14 @@ export default function Billing() {
     if (cancelBusy) return;
     setCancelBusy(true);
     try {
-      const res = (await requestCancellation()) as {
-        ok: boolean;
-        reason?: string;
-        renewsOn?: number | null;
-        cancelAvailableOn?: number | null;
-        already?: boolean;
-        endsOn?: number | null;
-      };
-      if (!res.ok && res.reason === "tooLate") {
-        toast.error(
-          `It's too late to cancel for next month — the charge on ${fmtDate(res.renewsOn)} already applies. You can cancel for the following month after ${fmtDate(res.cancelAvailableOn)}.`,
-        );
-      } else {
-        toast.success(
-          res.already
-            ? "Your subscription is already set to cancel."
-            : `Subscription canceled — no charge after ${fmtDate(
-                res.endsOn ?? cutoff?.renewsOn,
-              )}.`,
-        );
-      }
+      const res = await requestCancellation();
+      toast.success(
+        res.already
+          ? "Your subscription is already set to cancel."
+          : `Subscription canceled — you keep access until ${fmtDate(
+              res.endsOn ?? cutoff?.renewsOn,
+            )} and won't be charged again.`,
+      );
     } catch {
       toast.error("Couldn't cancel right now. Try again.");
     } finally {
@@ -279,8 +266,9 @@ export default function Billing() {
                 Billing
               </h1>
               <p className="text-sm text-[#6e6a60]">
-                Your plan renews automatically every month. Cancel anytime up
-                to 2 days before your renewal date.
+                Your plan renews automatically every month. Cancel anytime —
+                you keep access until the end of your billing period and
+                won&apos;t be charged again.
               </p>
             </div>
           </div>
@@ -493,26 +481,13 @@ export default function Billing() {
                     <div className="flex flex-col gap-4">
                       <p className="flex items-start gap-2 text-sm leading-relaxed text-[#6e6a60]">
                         <CalendarClock className="mt-0.5 size-4 shrink-0 text-forest-600" />
-                        {cutoff?.withinCutoff && cutoff.renewsOn ? (
-                          <>
-                            The next charge on{" "}
-                            <span className="font-semibold text-ink">
-                              {fmtDate(cutoff.renewsOn)}
-                            </span>{" "}
-                            already applies — you can cancel for the following
-                            month after that date.
-                          </>
-                        ) : (
-                          <>
-                            Cancel before{" "}
-                            <span className="font-semibold text-ink">
-                              {cutoff?.renewsOn
-                                ? fmtDate(cutoff.renewsOn - 2 * 86400000)
-                                : "—"}
-                            </span>{" "}
-                            and you won&apos;t be charged for next month.
-                          </>
-                        )}
+                        <span>
+                          Cancel anytime — you&apos;ll keep access until{" "}
+                          <span className="font-semibold text-ink">
+                            {fmtDate(cutoff?.renewsOn ?? sub.currentPeriodEnd)}
+                          </span>{" "}
+                          and won&apos;t be charged again.
+                        </span>
                       </p>
                       <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
                         <Button
@@ -525,7 +500,6 @@ export default function Billing() {
                         <Button
                           variant="outline"
                           onClick={() => setConfirmingCancel(true)}
-                          disabled={cutoff?.withinCutoff ?? false}
                           className="shrink-0 rounded-xl text-rose-600 hover:bg-rose-50 hover:text-rose-700"
                         >
                           Cancel subscription

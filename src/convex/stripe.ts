@@ -2,10 +2,9 @@
  * Cloudy AI — Stripe billing.
  *
  * Monthly subscriptions with automatic renewal. Cloudy charges the customer
- * every month until they cancel — and cancellations are honored only when
- * requested at least 2 days before the next renewal date (see
- * CANCEL_CUTOFF_MS in ./billing). If they cancel inside the 2-day window,
- * the next month's charge still applies and the subscription ends after it.
+ * every month until they cancel. Cancellation is honored at any time: the
+ * subscription is set to end at the current period boundary, access
+ * continues until then, and nothing is charged again unless they resume.
  *
  * Keys (managed in the Freebuff Keys tab, never shipped to the browser):
  *   STRIPE_SECRET_KEY       — sk_live_… / sk_test_…
@@ -24,7 +23,6 @@ import { action, internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
-import { CANCEL_CUTOFF_MS } from "./billing";
 import { SUPPORTED_CURRENCIES, usdToMinor } from "./lib/fx";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
@@ -382,17 +380,13 @@ export const createPortalSession = action({
 });
 
 /**
- * Cancel the subscription. Honored only when requested at least 2 days before
- * the next charge — otherwise the next month's charge still applies.
+ * Cancel the subscription at the end of the current billing period. Honored
+ * at any time: Stripe stops renewing, access continues until the period
+ * ends, and nothing is charged again unless the user resumes.
  */
 export const requestCancellation = action({
   args: {},
-  handler: async (
-    ctx,
-  ): Promise<
-    | { ok: true; already: boolean; endsOn: number | null }
-    | { ok: false; reason: "tooLate"; renewsOn: number; cancelAvailableOn: number }
-  > => {
+  handler: async (ctx): Promise<{ ok: true; already: boolean; endsOn: number | null }> => {
     const userId = await getAuthUserId(ctx);
     if (userId === null) throw new Error("Not authenticated");
     const sub = await ctx.runQuery(internal.billing.getSubscriptionByUser, {
@@ -400,39 +394,35 @@ export const requestCancellation = action({
     });
     if (!sub?.stripeSubscriptionId) throw new Error("No active subscription");
 
-    let renewsOn = sub.currentPeriodEnd ?? null;
-    if (renewsOn === null) {
+    let endsOn = sub.currentPeriodEnd ?? null;
+    if (endsOn === null) {
       // Same estimate as billing.getSubscription — one month after the
       // period start (or creation) when Stripe period data is missing.
       const base = sub.currentPeriodStart ?? sub.createdAt ?? Date.now();
       const est = new Date(base);
       est.setMonth(est.getMonth() + 1);
-      renewsOn = est.getTime();
-    }
-    const now = Date.now();
-
-    // Inside the 2-day window: too late for next month's charge.
-    if (now >= renewsOn - CANCEL_CUTOFF_MS) {
-      return {
-        ok: false,
-        reason: "tooLate",
-        renewsOn,
-        cancelAvailableOn: renewsOn,
-      };
+      endsOn = est.getTime();
     }
     if (sub.cancelAtPeriodEnd) {
-      return { ok: true, already: true, endsOn: renewsOn };
+      return { ok: true, already: true, endsOn };
     }
 
     const stripe = getStripe();
-    await stripe.subscriptions.update(sub.stripeSubscriptionId, {
+    const updated = (await stripe.subscriptions.update(sub.stripeSubscriptionId, {
       cancel_at_period_end: true,
-    });
+    })) as unknown as SubscriptionSnapshot;
+    if (!updated.cancel_at_period_end && !updated.cancel_at) {
+      throw new Error("Stripe didn't confirm the cancellation. Please try again.");
+    }
     await ctx.runMutation(internal.billing.patchSubscription, {
       id: sub._id,
-      data: { cancelAtPeriodEnd: true, updatedAt: Date.now() },
+      data: {
+        cancelAtPeriodEnd: true,
+        currentPeriodEnd: updated.current_period_end ? updated.current_period_end * 1000 : undefined,
+        updatedAt: Date.now(),
+      },
     });
-    return { ok: true, already: false, endsOn: renewsOn };
+    return { ok: true, already: false, endsOn: updated.current_period_end ? updated.current_period_end * 1000 : endsOn };
   },
 });
 
@@ -449,8 +439,11 @@ export const resumeSubscription = action({
     if (!sub.cancelAtPeriodEnd) return { ok: true, already: true };
 
     const stripe = getStripe();
+    // Clear both cancellation mechanisms so a cancel scheduled from the
+    // Stripe portal (cancel_at) is undone as well.
     await stripe.subscriptions.update(sub.stripeSubscriptionId, {
       cancel_at_period_end: false,
+      cancel_at: "",
     });
     await ctx.runMutation(internal.billing.patchSubscription, {
       id: sub._id,
@@ -480,6 +473,8 @@ interface SubscriptionSnapshot {
   customer: string;
   status: string;
   cancel_at_period_end: boolean;
+  /** Set when a cancellation is scheduled for a specific time (e.g. from the Stripe portal). */
+  cancel_at?: number | null;
   current_period_start?: number;
   current_period_end?: number;
   metadata?: Record<string, string>;
@@ -504,7 +499,7 @@ async function syncSubscription(
       stripeSubscriptionId: sub.id,
       plan,
       status: sub.status,
-      cancelAtPeriodEnd: sub.cancel_at_period_end,
+      cancelAtPeriodEnd: sub.cancel_at_period_end || Boolean(sub.cancel_at),
       currentPeriodStart: sub.current_period_start
         ? sub.current_period_start * 1000
         : undefined,

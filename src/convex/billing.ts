@@ -25,9 +25,6 @@ import {
  * This file is deliberately NOT "use node" so queries can live here.
  */
 
-/** Cancellations are honored up to 2 days before the next charge. */
-export const CANCEL_CUTOFF_MS = 2 * 24 * 60 * 60 * 1000;
-
 /** Whether users without a paid subscription get a free Starter trial.
  * DISABLED: All users must pay to generate plans. No free trials.
  */
@@ -105,7 +102,6 @@ export const getSubscription = query({
       est.setMonth(est.getMonth() + 1);
       renewsOn = est.getTime();
     }
-    const withinCutoff = now >= renewsOn - CANCEL_CUTOFF_MS;
 
     return {
       subscription: {
@@ -118,11 +114,7 @@ export const getSubscription = query({
         currentPeriodEnd: sub.currentPeriodEnd ?? null,
         stripeCustomerId: sub.stripeCustomerId ?? null,
       },
-      cutoff: {
-        withinCutoff,
-        renewsOn,
-        cancelAvailableOn: renewsOn,
-      },
+      cutoff: { renewsOn },
     };
   },
 });
