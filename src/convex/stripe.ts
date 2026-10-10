@@ -172,6 +172,17 @@ export const createCheckout = action({
       userId,
     });
     let customerId = existing?.stripeCustomerId;
+    if (customerId) {
+      // The stored customer can be stale (deleted in Stripe, or the account
+      // moved to a different Stripe key); fall through and create a new one.
+      try {
+        const customer = await stripe.customers.retrieve(customerId);
+        if ((customer as { deleted?: boolean }).deleted) customerId = undefined;
+      } catch (err) {
+        console.warn("Stored Stripe customer not found, creating a new one:", err instanceof Error ? err.message : err);
+        customerId = undefined;
+      }
+    }
     if (!customerId) {
       const email = await ctx.runQuery(internal.billing.getUserEmail, { userId });
       const customer = await stripe.customers.create({
@@ -379,6 +390,42 @@ export const createPortalSession = action({
   },
 });
 
+const isLiveStatus = (status: string): boolean =>
+  status === "active" || status === "trialing" || status === "past_due" || status === "incomplete";
+
+/**
+ * The customer's live Stripe subscription. Subscriptions get replaced (plan
+ * changes through Checkout or the portal), so the stored id can go stale;
+ * when Stripe no longer knows it, fall back to the customer's current
+ * subscription and repair the stored row.
+ */
+async function liveStripeSubscription(
+  ctx: ActionCtx,
+  stripe: Stripe,
+  sub: { stripeSubscriptionId?: string; stripeCustomerId?: string },
+): Promise<SubscriptionSnapshot | null> {
+  if (sub.stripeSubscriptionId) {
+    try {
+      const current = (await stripe.subscriptions.retrieve(
+        sub.stripeSubscriptionId,
+      )) as unknown as SubscriptionSnapshot;
+      if (isLiveStatus(current.status)) return current;
+    } catch (err) {
+      console.warn("Stored subscription not found in Stripe, looking up by customer:", err instanceof Error ? err.message : err);
+    }
+  }
+  if (!sub.stripeCustomerId) return null;
+  const list = await stripe.subscriptions.list({
+    customer: sub.stripeCustomerId,
+    status: "all",
+    limit: 20,
+  });
+  const live = (list.data as unknown as SubscriptionSnapshot[]).find((s) => isLiveStatus(s.status));
+  if (!live) return null;
+  await syncSubscription(ctx, live);
+  return live;
+}
+
 /**
  * Cancel the subscription at the end of the current billing period. Honored
  * at any time: Stripe stops renewing, access continues until the period
@@ -392,37 +439,38 @@ export const requestCancellation = action({
     const sub = await ctx.runQuery(internal.billing.getSubscriptionByUser, {
       userId,
     });
-    if (!sub?.stripeSubscriptionId) throw new Error("No active subscription");
-
-    let endsOn = sub.currentPeriodEnd ?? null;
-    if (endsOn === null) {
-      // Same estimate as billing.getSubscription — one month after the
-      // period start (or creation) when Stripe period data is missing.
-      const base = sub.currentPeriodStart ?? sub.createdAt ?? Date.now();
-      const est = new Date(base);
-      est.setMonth(est.getMonth() + 1);
-      endsOn = est.getTime();
-    }
-    if (sub.cancelAtPeriodEnd) {
-      return { ok: true, already: true, endsOn };
-    }
+    if (!sub?.stripeSubscriptionId && !sub?.stripeCustomerId) throw new Error("No active subscription");
 
     const stripe = getStripe();
-    const updated = (await stripe.subscriptions.update(sub.stripeSubscriptionId, {
+    const live = await liveStripeSubscription(ctx, stripe, sub);
+    if (!live) throw new Error("We couldn't find an active subscription for your account in Stripe. Please contact support.");
+
+    const periodEnd = live.current_period_end ? live.current_period_end * 1000 : (sub.currentPeriodEnd ?? null);
+    if (live.cancel_at_period_end || live.cancel_at) {
+      await ctx.runMutation(internal.billing.patchSubscription, {
+        id: sub._id,
+        data: { cancelAtPeriodEnd: true, updatedAt: Date.now() },
+      });
+      return { ok: true, already: true, endsOn: live.cancel_at ? live.cancel_at * 1000 : periodEnd };
+    }
+
+    const updated = (await stripe.subscriptions.update(live.id, {
       cancel_at_period_end: true,
     })) as unknown as SubscriptionSnapshot;
     if (!updated.cancel_at_period_end && !updated.cancel_at) {
       throw new Error("Stripe didn't confirm the cancellation. Please try again.");
     }
+    const endsOn = updated.current_period_end ? updated.current_period_end * 1000 : periodEnd;
     await ctx.runMutation(internal.billing.patchSubscription, {
       id: sub._id,
       data: {
+        stripeSubscriptionId: updated.id,
         cancelAtPeriodEnd: true,
-        currentPeriodEnd: updated.current_period_end ? updated.current_period_end * 1000 : undefined,
+        currentPeriodEnd: endsOn ?? undefined,
         updatedAt: Date.now(),
       },
     });
-    return { ok: true, already: false, endsOn: updated.current_period_end ? updated.current_period_end * 1000 : endsOn };
+    return { ok: true, already: false, endsOn };
   },
 });
 
@@ -435,19 +483,28 @@ export const resumeSubscription = action({
     const sub = await ctx.runQuery(internal.billing.getSubscriptionByUser, {
       userId,
     });
-    if (!sub?.stripeSubscriptionId) throw new Error("No subscription found");
-    if (!sub.cancelAtPeriodEnd) return { ok: true, already: true };
+    if (!sub?.stripeSubscriptionId && !sub?.stripeCustomerId) throw new Error("No subscription found");
 
     const stripe = getStripe();
+    const live = await liveStripeSubscription(ctx, stripe, sub);
+    if (!live) throw new Error("We couldn't find an active subscription for your account in Stripe. Please contact support.");
+    if (!live.cancel_at_period_end && !live.cancel_at) {
+      await ctx.runMutation(internal.billing.patchSubscription, {
+        id: sub._id,
+        data: { cancelAtPeriodEnd: false, updatedAt: Date.now() },
+      });
+      return { ok: true, already: true };
+    }
+
     // Clear both cancellation mechanisms so a cancel scheduled from the
     // Stripe portal (cancel_at) is undone as well.
-    await stripe.subscriptions.update(sub.stripeSubscriptionId, {
+    await stripe.subscriptions.update(live.id, {
       cancel_at_period_end: false,
       cancel_at: "",
     });
     await ctx.runMutation(internal.billing.patchSubscription, {
       id: sub._id,
-      data: { cancelAtPeriodEnd: false, updatedAt: Date.now() },
+      data: { stripeSubscriptionId: live.id, cancelAtPeriodEnd: false, updatedAt: Date.now() },
     });
     return { ok: true, already: false };
   },
@@ -606,22 +663,23 @@ export const internalSyncSubscription = internalAction({
     try {
       const stripe = new Stripe(STRIPE_SECRET_KEY);
       const email = await ctx.runQuery(internal.billing.getUserEmail, { userId });
-      if (!email) {
-        console.warn("No email found for user, skipping subscription sync");
-        return;
+      const existing = await ctx.runQuery(internal.billing.getSubscriptionByUser, { userId });
+
+      // Prefer the customer we already know; fall back to an email lookup.
+      let customers: { id: string }[] = existing?.stripeCustomerId ? [{ id: existing.stripeCustomerId }] : [];
+      if (customers.length === 0) {
+        if (!email) {
+          console.warn("No email or Stripe customer for user, skipping subscription sync");
+          return;
+        }
+        customers = (await stripe.customers.list({ email, limit: 100 })).data;
+        if (customers.length === 0) {
+          console.log("No Stripe customer found for email:", email);
+          return;
+        }
       }
 
-      const customers = await stripe.customers.list({
-        email,
-        limit: 100,
-      });
-
-      if (customers.data.length === 0) {
-        console.log("No Stripe customer found for email:", email);
-        return;
-      }
-
-      for (const customer of customers.data) {
+      for (const customer of customers) {
         const subs = await stripe.subscriptions.list({
           customer: customer.id,
           limit: 100,
