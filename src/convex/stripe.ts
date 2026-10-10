@@ -445,7 +445,8 @@ export const requestCancellation = action({
     const live = await liveStripeSubscription(ctx, stripe, sub);
     if (!live) throw new Error("We couldn't find an active subscription for your account in Stripe. Please contact support.");
 
-    const periodEnd = live.current_period_end ? live.current_period_end * 1000 : (sub.currentPeriodEnd ?? null);
+    const livePeriodEnd = periodEndOf(live);
+    const periodEnd = livePeriodEnd ? livePeriodEnd * 1000 : (sub.currentPeriodEnd ?? null);
     if (live.cancel_at_period_end || live.cancel_at) {
       await ctx.runMutation(internal.billing.patchSubscription, {
         id: sub._id,
@@ -460,7 +461,8 @@ export const requestCancellation = action({
     if (!updated.cancel_at_period_end && !updated.cancel_at) {
       throw new Error("Stripe didn't confirm the cancellation. Please try again.");
     }
-    const endsOn = updated.current_period_end ? updated.current_period_end * 1000 : periodEnd;
+    const updatedPeriodEnd = periodEndOf(updated);
+    const endsOn = updatedPeriodEnd ? updatedPeriodEnd * 1000 : periodEnd;
     await ctx.runMutation(internal.billing.patchSubscription, {
       id: sub._id,
       data: {
@@ -496,12 +498,15 @@ export const resumeSubscription = action({
       return { ok: true, already: true };
     }
 
-    // Clear both cancellation mechanisms so a cancel scheduled from the
-    // Stripe portal (cancel_at) is undone as well.
-    await stripe.subscriptions.update(live.id, {
-      cancel_at_period_end: false,
-      cancel_at: "",
-    });
+    // Stripe rejects cancel_at and cancel_at_period_end in the same call, so
+    // clear whichever mechanism is active (the portal schedules cancel_at).
+    const cleared = (await stripe.subscriptions.update(
+      live.id,
+      live.cancel_at_period_end ? { cancel_at_period_end: false } : { cancel_at: "" },
+    )) as unknown as SubscriptionSnapshot;
+    if (cleared.cancel_at_period_end || cleared.cancel_at) {
+      throw new Error("Stripe didn't confirm the resume. Please try again.");
+    }
     await ctx.runMutation(internal.billing.patchSubscription, {
       id: sub._id,
       data: { stripeSubscriptionId: live.id, cancelAtPeriodEnd: false, updatedAt: Date.now() },
@@ -535,8 +540,21 @@ interface SubscriptionSnapshot {
   current_period_start?: number;
   current_period_end?: number;
   metadata?: Record<string, string>;
-  items?: { data?: { price?: { unit_amount?: number | null } }[] };
+  // Newer Stripe API versions report the billing period on each item
+  // instead of on the subscription itself.
+  items?: {
+    data?: {
+      price?: { unit_amount?: number | null };
+      current_period_start?: number;
+      current_period_end?: number;
+    }[];
+  };
 }
+
+const periodStartOf = (sub: SubscriptionSnapshot): number | undefined =>
+  sub.current_period_start ?? sub.items?.data?.[0]?.current_period_start;
+const periodEndOf = (sub: SubscriptionSnapshot): number | undefined =>
+  sub.current_period_end ?? sub.items?.data?.[0]?.current_period_end;
 
 async function syncSubscription(
   ctx: ActionCtx,
@@ -557,12 +575,8 @@ async function syncSubscription(
       plan,
       status: sub.status,
       cancelAtPeriodEnd: sub.cancel_at_period_end || Boolean(sub.cancel_at),
-      currentPeriodStart: sub.current_period_start
-        ? sub.current_period_start * 1000
-        : undefined,
-      currentPeriodEnd: sub.current_period_end
-        ? sub.current_period_end * 1000
-        : undefined,
+      currentPeriodStart: periodStartOf(sub) ? periodStartOf(sub)! * 1000 : undefined,
+      currentPeriodEnd: periodEndOf(sub) ? periodEndOf(sub)! * 1000 : undefined,
       updatedAt: Date.now(),
     },
   });
