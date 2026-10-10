@@ -15,7 +15,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useSearchParams, Link } from "react-router";
+import { useSearchParams } from "react-router";
 import {
   redirectToCheckout,
   useLocalPrices,
@@ -274,7 +274,7 @@ export default function Billing() {
           </div>
 
           {/* Plan cards - 3-column grid on desktop, 1 on mobile */}
-          <div className="w-full grid grid-cols-1 lg:grid-cols-[1fr_1fr_1fr] gap-8 lg:-ml-[20rem]">
+          <div id="plans" className="w-full grid grid-cols-1 lg:grid-cols-[1fr_1fr_1fr] gap-8 lg:-ml-[20rem] scroll-mt-24">
             {PLANS.map((p) => {
               const isCurrentPlan = sub?.plan === p.id;
               const planIndex = PLAN_ORDER.indexOf(p.id);
@@ -491,11 +491,11 @@ export default function Billing() {
                       </p>
                       <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
                         <Button
-                          asChild
                           variant="outline"
                           className="rounded-xl"
+                          onClick={() => document.getElementById("plans")?.scrollIntoView({ behavior: "smooth", block: "start" })}
                         >
-                          <Link to="/dashboard/billing?plan=starter">Subscribe to another plan</Link>
+                          Subscribe to another plan
                         </Button>
                         <Button
                           variant="outline"
