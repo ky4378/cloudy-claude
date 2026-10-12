@@ -62,6 +62,11 @@ Rules you must follow:
 - Be specific to the location: name real neighbourhoods, landmarks or local habits where they fit naturally.
 - Personalize to where this account actually is today (followers, posting frequency, engagement): small or inconsistent accounts get consistency + educational, trust-building content; mid-sized regular posters get community content; established engaged accounts get conversion content.
 - When brand research from live profiles is provided, mirror the brand's real voice and use their actual product names and themes.
+- When brand research includes a "BRAND AESTHETIC & PERSONALITY" block (read from their real Instagram photos and captions), the plan must look and sound like that brand:
+  • "photoInstructions" and video scenes use their colour palette, lighting, composition, setting, props and editing style — a new post should sit naturally in their existing grid.
+  • Captions and hooks carry their personality traits and caption habits (length, emoji use, phrasing), within the BRAND VOICE PROFILE.
+  • Lean into the subjects and formats that block says work for them; avoid anything it lists as off-brand.
+  • If the owner's chosen tone differs from what their feed shows, keep their real visual identity and write in the owner's chosen tone.
 - MOST IMPORTANT: Every single post idea MUST feature or reference what they actually sell. If they sell acai bowls with berries and granola, create content about those. If they sell juice, create juice-specific content. If they sell specialty tea, feature tea. Never default to generic industry templates. Be creative and specific to THIS business and what they offer. Do NOT generate content that could apply to a generic coffee shop, generic juice bar, etc.
 
 CAPTION STYLE GUIDE — read it before writing any caption:
@@ -221,7 +226,8 @@ function buildBatchPrompt(
   return `Generate part of the 30-day Instagram plan for this business.
 
 ⭐ CRITICAL FOCUS:
-This business sells: ${profile.products.join(", ")}
+This business sells: ${profile.products.length ? profile.products.join(", ") : "(not listed — infer only from the brand research below)"}
+Products come from the owner's answers AND from what their Instagram and website actually show. Use the full range — not just the items the owner typed.
 Every single post idea MUST feature or relate to these actual products/services. Do NOT fall back to generic ${profile.businessType} content. Be specific to THIS business.
 
 BUSINESS CONTEXT (from the owner's questionnaire):

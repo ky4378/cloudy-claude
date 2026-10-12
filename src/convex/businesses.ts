@@ -212,9 +212,19 @@ export const replacePosts = internalMutation({
 });
 
 export const patchBrandResearch = internalMutation({
-  args: { businessId: v.id("businesses"), brandResearch: v.optional(v.string()) },
-  handler: async (ctx, { businessId, brandResearch }) => {
-    await ctx.db.patch(businessId, { brandResearch });
+  args: {
+    businessId: v.id("businesses"),
+    brandResearch: v.optional(v.string()),
+    brandResearchHandle: v.optional(v.string()),
+    discoveredProducts: v.optional(v.array(v.string())),
+  },
+  handler: async (ctx, { businessId, brandResearch, brandResearchHandle, discoveredProducts }) => {
+    await ctx.db.patch(businessId, {
+      brandResearch,
+      brandResearchAt: Date.now(),
+      brandResearchHandle,
+      discoveredProducts,
+    });
   },
 });
 

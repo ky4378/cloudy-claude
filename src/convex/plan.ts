@@ -17,7 +17,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { formatDate, todayString, type BusinessProfile } from "./lib/strategy";
-import { researchProfiles } from "./lib/research";
+import { normalizeHandle, normalizeWebsite, researchProfiles } from "./lib/research";
 import {
   buildCalendarFallback,
   buildDayFallback,
@@ -27,6 +27,9 @@ import {
 import { generateStrategyAI, strategyNote } from "./lib/insights";
 import { getLimitsFor } from "./lib/planLimits";
 import { fetchLiveTrends, formatTrendsPrompt } from "./lib/trends";
+
+// How long saved Instagram research is reused before re-scraping.
+const RESEARCH_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 // ---------------------------------------------------------------------------
 // Profile helpers
@@ -49,13 +52,16 @@ export const toProfile = (
   const personality = strArr(args.brandPersonality);
   const mainGoal = optStr(args.mainGoal);
   const goals = strArr(args.goals);
+  const discoveredProducts = strArr(args.discoveredProducts);
   return {
     businessName: String(args.businessName ?? ""),
     businessType: String(args.businessType ?? "other"),
     location: String(args.location ?? ""),
     instagram: optStr(args.instagram),
     website: optStr(args.website),
-    products: strArr(args.products),
+    // The owner's list plus anything found on their Instagram / website.
+    products: mergeProducts(strArr(args.products), discoveredProducts),
+    discoveredProducts,
     targetCustomers: String(args.targetCustomers ?? ""),
     goals: mainGoal && !goals.includes(mainGoal) ? [mainGoal, ...goals] : goals,
     brandPersonality: tone && !personality.includes(tone) ? [tone, ...personality] : personality,
@@ -72,6 +78,12 @@ export const toProfile = (
     challenges: optStr(args.challenges),
     competitors: strArr(args.competitors),
   };
+};
+
+/** Owner-entered products first, then discovered ones not already listed. */
+export const mergeProducts = (owner: string[], found: string[]): string[] => {
+  const seen = new Set(owner.map((p) => p.toLowerCase()));
+  return [...owner, ...found.filter((p) => !seen.has(p.toLowerCase()) && seen.add(p.toLowerCase()))];
 };
 
 /** The questionnaire payload accepted by saveBusiness / updateProfile. */
@@ -177,25 +189,48 @@ async function runPlanPipeline(
     const limits = await planDepth(ctx, userId);
     const profile = toProfile(business);
 
-    // 1 & 2. Run brand research and strategy generation in parallel.
-    console.log("[Plan Pipeline] Starting research and strategy...");
-    const [research, strategy] = await Promise.all([
-      researchProfiles(
-        { instagram: business.instagram },
-        { igToken: business.igToken, igAccountId: business.igConnectedAccountId },
-      ),
-      generateStrategyAI(profile, limits.marketingStrategy),
-    ]);
-    console.log("[Plan Pipeline] Research and strategy complete");
+    // Reuse the saved Instagram + website research for a week (same handle
+    // and website) so plan regenerations don't pay for another Apify scrape.
+    const igHandle = normalizeHandle(business.instagram);
+    const website = normalizeWebsite(business.website);
+    const researchKey = `${igHandle ?? ""}|${website ?? ""}`;
+    const hasCache =
+      Boolean(business.brandResearch || business.discoveredProducts?.length) &&
+      business.brandResearchHandle === researchKey &&
+      business.brandResearchAt !== undefined &&
+      Date.now() - business.brandResearchAt < RESEARCH_TTL_MS;
+
+    // 1. Research first — the products found on their Instagram / website
+    //    must shape the strategy as well as the calendar.
+    let freshResearch: { brief: string; products: string[] } | undefined;
+    if (hasCache) {
+      console.log("[Plan Pipeline] Reusing saved brand research");
+    } else if (igHandle || website) {
+      console.log("[Plan Pipeline] Researching Instagram / website...");
+      freshResearch = await researchProfiles(
+        { instagram: business.instagram, website: business.website },
+        {
+          igToken: business.igToken,
+          igAccountId: business.igConnectedAccountId,
+          businessName: business.businessName,
+          businessType: business.businessType,
+        },
+      );
+      if (freshResearch.brief) profile.brandResearch = freshResearch.brief;
+      if (freshResearch.products.length) {
+        profile.discoveredProducts = freshResearch.products;
+        profile.products = mergeProducts(strArr(business.products), freshResearch.products);
+      }
+    }
+
+    // 2. Strategy, informed by the research.
+    console.log("[Plan Pipeline] Generating strategy...");
+    const strategy = await generateStrategyAI(profile, limits.marketingStrategy);
 
     // 3. Build content plan with AI (smart, personalized to products) while saving research/strategy.
     const excludedIdeas = await ctx.runQuery(internal.businesses.getExcludedContentIdeas, {
       businessId,
     });
-
-    if (research) {
-      profile.brandResearch = research;
-    }
 
     const opts = { startDate: anchor, salt, strategyNote: strategyNote(strategy), excludedIdeas };
 
@@ -209,10 +244,14 @@ async function runPlanPipeline(
 
     // 4. Save everything to database in parallel (research, strategy, posts, plan metadata, usage).
     await Promise.all([
-      research ? ctx.runMutation(internal.businesses.patchBrandResearch, {
-        businessId,
-        brandResearch: research,
-      }) : Promise.resolve(),
+      freshResearch && (freshResearch.brief || freshResearch.products.length)
+        ? ctx.runMutation(internal.businesses.patchBrandResearch, {
+            businessId,
+            brandResearch: freshResearch.brief || undefined,
+            brandResearchHandle: researchKey,
+            discoveredProducts: freshResearch.products,
+          })
+        : Promise.resolve(),
       ctx.runMutation(internal.businesses.patchStrategy, { businessId, strategy }),
       ctx.runMutation(internal.businesses.replacePosts, { businessId, plans }),
       ctx.runMutation(internal.businesses.finishPlan, {

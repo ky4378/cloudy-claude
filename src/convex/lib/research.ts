@@ -15,6 +15,8 @@
 
 "use node";
 
+import { chat, parseJson as parseAiJson, type ChatContentPart } from "./ai";
+
 const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 
@@ -33,12 +35,22 @@ const IG_SESSION_ID = process.env.IG_SESSION_ID;
 const IG_CSRF_TOKEN = process.env.IG_CSRF_TOKEN;
 
 const MAX_POSTS = 6;
-const MAX_BRIEF = 5000;
+const MAX_BRIEF = 9000;
+// Website research: homepage plus up to this many menu/product pages.
+const WEBSITE_EXTRA_PAGES = 2;
+const WEBSITE_TIMEOUT_MS = 20000;
+const MAX_WEBSITE_TEXT = 12000;
+const MAX_PRODUCTS = 25;
+// Aesthetic analysis: how many recent post images the vision model looks at.
+const AESTHETIC_IMAGES = 6;
+const IMAGE_TIMEOUT_MS = 8000;
+const MAX_IMAGE_BYTES = 2_000_000;
 const TIMEOUT_MS = 7000;
 const APIFY_TIMEOUT_MS = 60000;
 
 export interface SocialHandles {
   instagram?: string;
+  website?: string;
 }
 
 /**
@@ -49,6 +61,16 @@ export interface SocialHandles {
 export interface ResearchOptions {
   igToken?: string;
   igAccountId?: string;
+  /** Helps the product extractor tell real products from noise. */
+  businessName?: string;
+  businessType?: string;
+}
+
+export interface ResearchResult {
+  /** Compact brand brief for prompts ("" when nothing was found). */
+  brief: string;
+  /** Products/services seen on their Instagram and website. */
+  products: string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -297,6 +319,8 @@ async function researchInstagramViaGraph(
 
 interface ApifyIgPost {
   caption?: string;
+  displayUrl?: string;
+  alt?: string;
   likesCount?: number;
   commentsCount?: number;
   type?: string;
@@ -312,8 +336,8 @@ interface ApifyIgProfile {
   followsCount?: number;
   postsCount?: number;
   externalUrl?: string;
-  category?: string;
-  isPrivate?: boolean;
+  businessCategoryName?: string;
+  private?: boolean;
   isBusinessAccount?: boolean;
   verified?: boolean;
   latestPosts?: ApifyIgPost[];
@@ -338,14 +362,14 @@ async function researchInstagramViaApify(
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          directUrls: [`https://www.instagram.com/${handle}/`],
-          resultsLimit: 1,
-        }),
+        body: JSON.stringify({ usernames: [handle] }),
         signal: AbortSignal.timeout(APIFY_TIMEOUT_MS),
       },
     );
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.warn(`[IG research] @${handle}: Apify HTTP ${res.status}`);
+      return null;
+    }
     const data = (await res.json()) as unknown;
     if (Array.isArray(data)) {
       items = data as ApifyIgProfile[];
@@ -353,7 +377,8 @@ async function researchInstagramViaApify(
       const wrapped = data as { items?: ApifyIgProfile[] } | null;
       if (wrapped && Array.isArray(wrapped.items)) items = wrapped.items;
     }
-  } catch {
+  } catch (err) {
+    console.warn(`[IG research] @${handle}: Apify failed`, err);
     return null;
   }
   const profile = items?.find((p) => p && typeof p === "object") ?? null;
@@ -363,12 +388,12 @@ async function researchInstagramViaApify(
   lines.push(`INSTAGRAM (@${profile.username || handle})`);
   if (profile.fullName) lines.push(`Name: ${profile.fullName}`);
   if (profile.biography) lines.push(`Bio: ${truncate(profile.biography, 300)}`);
-  if (profile.category) lines.push(`Category: ${profile.category}`);
+  if (profile.businessCategoryName) lines.push(`Category: ${profile.businessCategoryName}`);
   if (profile.followersCount !== undefined)
     lines.push(`Followers: ${profile.followersCount.toLocaleString()}`);
   if (profile.postsCount !== undefined)
     lines.push(`Posts: ${profile.postsCount}`);
-  if (profile.isPrivate === true)
+  if (profile.private === true)
     lines.push("Private account (posts not visible)");
   if (profile.verified === true) lines.push("Verified account");
 
@@ -382,19 +407,145 @@ async function researchInstagramViaApify(
           ? ` · ${p.likesCount.toLocaleString()} likes`
           : "";
       const day = p.timestamp ? ` · ${String(p.timestamp).slice(0, 10)}` : "";
-      const tags = Array.isArray(p.hashtags)
+      const tags = Array.isArray(p.hashtags) && p.hashtags.length
         ? ` · ${p.hashtags.slice(0, 8).join(" ")}`
         : "";
+      const alt = p.alt ? ` (image: ${truncate(p.alt, 120)})` : "";
       lines.push(
         `${i + 1}. [${kind}]${likes}${day}${tags} ${truncate(
           p.caption || "(no caption)",
           200,
-        )}`,
+        )}${alt}`,
       );
     });
   }
   if (lines.length <= 1) return null;
+
+  const aesthetic = await analyzeBrandAesthetic(profile.username || handle, profile);
+  if (aesthetic) lines.push("", aesthetic);
   return lines.join("\n");
+}
+
+// ---------------------------------------------------------------------------
+// Brand aesthetic & personality — a vision model looks at the brand's recent
+// post images and captions and describes how the feed looks and sounds, so
+// the plan can match it.
+// ---------------------------------------------------------------------------
+
+interface AestheticResult {
+  overallLook?: string;
+  palette?: string[];
+  lighting?: string;
+  composition?: string;
+  editing?: string;
+  settingAndProps?: string;
+  recurringSubjects?: string[];
+  mood?: string;
+  personalityTraits?: string[];
+  captionVoice?: string;
+  whatWorks?: string[];
+  offBrand?: string[];
+  productsSeen?: string[];
+}
+
+const AESTHETIC_SYSTEM = `You are a brand designer and social media art director. You are shown a small business's most recent Instagram post images with their captions and engagement. Describe the brand's real visual identity and personality so a content planner can create new posts that sit naturally in this feed.
+
+Be concrete and specific to what you actually see — name colours, light, angles, backgrounds, props, textures, fonts on graphics, people/no people. Never invent things that aren't visible. Keep every field short.
+
+Return ONLY valid JSON:
+{"overallLook":"one sentence describing the feed's look and feel","palette":["3-6 dominant colours, plain names"],"lighting":"...","composition":"framing, angles, negative space, close-ups vs wide","editing":"filters, contrast, warmth, grain, text overlays","settingAndProps":"backgrounds, surfaces, props, location cues","recurringSubjects":["what they post most"],"mood":"the emotional feel","personalityTraits":["3-5 adjectives for the brand personality"],"captionVoice":"how captions read: length, emoji use, humour, formality, recurring phrases","whatWorks":["which subjects/formats get the most likes here"],"offBrand":["things that would clash with this feed"],"productsSeen":["specific products, dishes, drinks or services visible in the photos — as specific as you can tell (e.g. 'iced matcha latte', 'gel manicure'); never guess brand or menu names you can't read"]}`;
+
+/** Download one image and return it as a data URL, or null on any failure. */
+async function imageDataUrl(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url, {
+      headers: { "User-Agent": UA },
+      signal: AbortSignal.timeout(IMAGE_TIMEOUT_MS),
+    });
+    if (!res.ok) return null;
+    const type = res.headers.get("content-type") ?? "image/jpeg";
+    if (!type.startsWith("image/")) return null;
+    const buf = Buffer.from(await res.arrayBuffer());
+    if (buf.length === 0 || buf.length > MAX_IMAGE_BYTES) return null;
+    return `data:${type};base64,${buf.toString("base64")}`;
+  } catch {
+    return null;
+  }
+}
+
+async function analyzeBrandAesthetic(
+  handle: string,
+  profile: ApifyIgProfile,
+): Promise<string | null> {
+  const posts = (profile.latestPosts ?? [])
+    .filter((p) => p.displayUrl)
+    .slice(0, AESTHETIC_IMAGES);
+  if (posts.length < 2) return null;
+
+  // Instagram CDN links are short-lived and sometimes blocked for third
+  // parties, so download the images here and send them inline.
+  const images = await Promise.all(posts.map((p) => imageDataUrl(p.displayUrl!)));
+  const parts: ChatContentPart[] = [
+    {
+      type: "text",
+      text: `Instagram account @${handle}${profile.fullName ? ` (${profile.fullName})` : ""}${
+        profile.businessCategoryName ? ` — ${profile.businessCategoryName}` : ""
+      }.\nBio: ${truncate(profile.biography || "(none)", 300)}\n\nRecent posts, newest first:`,
+    },
+  ];
+  let imageCount = 0;
+  posts.forEach((p, i) => {
+    const kind = /video|reel/i.test(p.type ?? "") ? "video (cover frame)" : (p.type ?? "photo").toLowerCase();
+    const likes = p.likesCount !== undefined ? `, ${p.likesCount} likes` : "";
+    parts.push({
+      type: "text",
+      text: `\nPost ${i + 1} — ${kind}${likes}. Caption: ${truncate(p.caption || "(no caption)", 300)}`,
+    });
+    if (images[i]) {
+      parts.push({ type: "image_url", image_url: { url: images[i]!, detail: "low" } });
+      imageCount++;
+    }
+  });
+  if (imageCount < 2) {
+    console.warn(`[IG research] @${handle}: aesthetic skipped, only ${imageCount} images downloaded`);
+    return null;
+  }
+
+  const raw = await chat(
+    [
+      { role: "system", content: AESTHETIC_SYSTEM },
+      { role: "user", content: parts },
+    ],
+    { maxTokens: 900, temperature: 0.3, timeoutMs: 60_000 },
+  );
+  const a = raw ? parseAiJson<AestheticResult>(raw) : null;
+  if (!a || typeof a !== "object") {
+    console.warn(`[IG research] @${handle}: aesthetic analysis failed`);
+    return null;
+  }
+
+  const list = (x: unknown): string =>
+    Array.isArray(x) ? x.filter((v) => typeof v === "string" && v.trim()).join(", ") : "";
+  const text = (x: unknown): string => (typeof x === "string" ? x.trim() : "");
+  const rows: [string, string][] = [
+    ["Overall look", text(a.overallLook)],
+    ["Colour palette", list(a.palette)],
+    ["Lighting", text(a.lighting)],
+    ["Composition", text(a.composition)],
+    ["Editing", text(a.editing)],
+    ["Setting & props", text(a.settingAndProps)],
+    ["Recurring subjects", list(a.recurringSubjects)],
+    ["Mood", text(a.mood)],
+    ["Personality", list(a.personalityTraits)],
+    ["Caption voice", text(a.captionVoice)],
+    ["What performs best", list(a.whatWorks)],
+    ["Off-brand (avoid)", list(a.offBrand)],
+    ["Products seen in photos", list(a.productsSeen)],
+  ];
+  const body = rows.filter(([, v]) => v).map(([k, v]) => `${k}: ${truncate(v, 260)}`);
+  if (body.length < 3) return null;
+  console.log(`[IG research] @${handle}: aesthetic analysed from ${imageCount} images`);
+  return [`BRAND AESTHETIC & PERSONALITY (from their last ${imageCount} Instagram posts)`, ...body].join("\n");
 }
 
 // ---------------------------------------------------------------------------
@@ -483,26 +634,27 @@ async function researchInstagram(
   const handle = normalizeHandle(rawHandle);
   if (!handle) return null;
 
-  // Official Meta Business Discovery first (free + ToS-compliant) when the
-  // owner has connected their Instagram account.
+  // Apify first — reliable public-profile scraping (no Instagram login) and
+  // the only path that also analyses the brand's visual aesthetic.
+  const apify = await researchInstagramViaApify(rawHandle);
+  if (apify) {
+    console.log(`[IG research] @${handle}: via Apify`);
+    return apify;
+  }
+
+  // Official Meta Business Discovery when the owner has connected their
+  // Instagram account.
   const graph = await researchInstagramViaGraph(rawHandle, opts);
   if (graph) {
     console.log(`[IG research] @${handle}: via Meta Graph API`);
     return graph;
   }
 
-  // Session cookies — reliable profile reading via a real Instagram login.
+  // Session cookies — backup when Apify is unavailable or fails.
   const session = await researchInstagramViaSession(rawHandle);
   if (session) {
     console.log(`[IG research] @${handle}: via session cookies`);
     return session;
-  }
-
-  // Apify next — reliable public-profile scraping when a token is configured.
-  const apify = await researchInstagramViaApify(rawHandle);
-  if (apify) {
-    console.log(`[IG research] @${handle}: via Apify`);
-    return apify;
   }
 
   // Run both strategies in parallel; take whichever finds data first.
@@ -565,22 +717,193 @@ async function researchInstagram(
 // Public entry point
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Website — homepage plus menu / product / services pages
+// ---------------------------------------------------------------------------
+
+/** Turn whatever the owner typed into a full https URL, or undefined. */
+export function normalizeWebsite(raw: string | undefined): string | undefined {
+  let s = (raw ?? "").trim();
+  if (!s || /\s/.test(s)) return undefined;
+  if (!/^https?:\/\//i.test(s)) s = `https://${s}`;
+  try {
+    const u = new URL(s);
+    if (!u.hostname.includes(".")) return undefined;
+    // Their Instagram is researched separately.
+    if (/(^|\.)instagram\.com$/i.test(u.hostname)) return undefined;
+    u.hash = "";
+    return u.toString().replace(/\/$/, "");
+  } catch {
+    return undefined;
+  }
+}
+
+const MENU_LINK =
+  /menu|product|shop|store|service|pric|treatment|collection|catalog|order|food|drink|dishes|offer/i;
+
+/** Read a page as text through Jina's reader (renders JS sites and PDFs). */
+async function readPage(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(`https://r.jina.ai/${url}`, {
+      // No browser user-agent here: the reader answers 403 to spoofed UAs.
+      headers: { "x-return-format": "markdown" },
+      signal: AbortSignal.timeout(WEBSITE_TIMEOUT_MS),
+    });
+    if (res.ok) {
+      const txt = (await res.text()).replace(/^[\s\S]*?Markdown Content:\s*/i, "");
+      if (txt.trim().length > 80) return txt;
+    } else {
+      console.warn(`[Web research] reader HTTP ${res.status} for ${url}`);
+    }
+  } catch (err) {
+    console.warn(`[Web research] reader failed for ${url}`, err);
+  }
+  const html = await fetchText(url);
+  if (!html) return null;
+  const links = [...html.matchAll(/<a[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi)]
+    .map((m) => `[${m[2].replace(/<[^>]+>/g, "").trim()}](${m[1]})`)
+    .join(" ");
+  const text = html
+    .replace(/<(script|style|noscript)[\s\S]*?<\/\1>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/\s+/g, " ")
+    .trim();
+  return text.length > 80 ? `${text}\n${links}` : null;
+}
+
+async function researchWebsite(rawUrl: string): Promise<string | null> {
+  const url = normalizeWebsite(rawUrl);
+  if (!url) return null;
+  const home = await readPage(url);
+  if (!home) {
+    console.warn(`[Web research] ${url}: could not read homepage`);
+    return null;
+  }
+
+  // Follow a couple of same-site links that look like a menu / products page.
+  const host = new URL(url).hostname.replace(/^www\./, "");
+  const extra: string[] = [];
+  for (const m of home.matchAll(/\[([^\]]{0,80})\]\((https?:\/\/[^)\s]+|\/[^)\s]*)\)/g)) {
+    let link: URL;
+    try {
+      link = new URL(m[2], url);
+    } catch {
+      continue;
+    }
+    if (link.hostname.replace(/^www\./, "") !== host) continue;
+    if (!MENU_LINK.test(`${m[1]} ${link.pathname}`)) continue;
+    if (/\.(jpe?g|png|gif|webp|svg)$/i.test(link.pathname)) continue;
+    link.hash = "";
+    const href = link.toString();
+    if (href.replace(/\/$/, "") === url || extra.includes(href)) continue;
+    extra.push(href);
+    if (extra.length >= WEBSITE_EXTRA_PAGES) break;
+  }
+  const pages = await Promise.all(extra.map((u) => readPage(u)));
+
+  const strip = (t: string) =>
+    t
+      .replace(/!\[[^\]]*\]\([^)]*\)/g, " ") // images
+      .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1") // keep link text only
+      .replace(/[ \t]+/g, " ")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+  const parts = [`HOMEPAGE (${url})\n${strip(home)}`];
+  pages.forEach((t, i) => {
+    if (t) parts.push(`PAGE (${extra[i]})\n${strip(t)}`);
+  });
+  console.log(`[Web research] ${url}: read ${1 + pages.filter(Boolean).length} page(s)`);
+  return parts.join("\n\n").slice(0, MAX_WEBSITE_TEXT);
+}
+
+// ---------------------------------------------------------------------------
+// Product discovery — what they actually sell, from Instagram + website
+// ---------------------------------------------------------------------------
+
+interface ProductExtraction {
+  products?: { name?: string; detail?: string }[];
+  websiteSummary?: string;
+}
+
+const PRODUCTS_SYSTEM = `You read a small business's Instagram research and website text and list what the business ACTUALLY sells — specific products, menu items, dishes, drinks, services, treatments or packages.
+
+Rules:
+- Only list items clearly shown in the material (menu, product pages, captions, photos). Never invent items, prices or names.
+- Be specific ("Iced Ube Latte", "Balayage", "Sourdough Croissant"), not generic categories ("drinks", "hair services") — unless only the category is known.
+- Prefer signature items, best-sellers and items that appear repeatedly. Max ${MAX_PRODUCTS}.
+- "detail" is optional and short: price, size, key ingredient or what makes it special — only if stated.
+- "websiteSummary": 2-4 sentences on what the website says about the business (offer, story, location, ordering/booking), or "" if no website text was given.
+
+Return ONLY valid JSON: {"products":[{"name":"...","detail":"..."}],"websiteSummary":"..."}`;
+
+async function extractProducts(
+  igBrief: string | null,
+  websiteText: string | null,
+  opts: ResearchOptions,
+): Promise<ProductExtraction | null> {
+  const user = [
+    `Business: ${opts.businessName || "(unknown)"}${opts.businessType ? ` — ${opts.businessType}` : ""}`,
+    igBrief ? `\nINSTAGRAM RESEARCH:\n${igBrief}` : "",
+    websiteText ? `\nWEBSITE TEXT:\n${websiteText}` : "",
+  ].join("\n");
+  const raw = await chat(
+    [
+      { role: "system", content: PRODUCTS_SYSTEM },
+      { role: "user", content: user },
+    ],
+    { maxTokens: 1200, temperature: 0.2, timeoutMs: 60_000 },
+  );
+  const parsed = raw ? parseAiJson<ProductExtraction>(raw) : null;
+  return parsed && typeof parsed === "object" ? parsed : null;
+}
+
+// ---------------------------------------------------------------------------
+// Public entry point
+// ---------------------------------------------------------------------------
+
 /**
- * Visit all provided profiles in parallel and build a compact brand brief.
- * Returns "" (never throws) when nothing public could be gathered.
+ * Visit their Instagram and website in parallel, then work out what they
+ * sell from both. Never throws; returns an empty brief when nothing public
+ * could be gathered.
  */
 export async function researchProfiles(
   handles: SocialHandles,
   opts: ResearchOptions = {},
-): Promise<string> {
-  const jobs: Promise<string | null>[] = [];
-  if (handles.instagram) jobs.push(researchInstagram(handles.instagram, opts));
+): Promise<ResearchResult> {
+  const [ig, web] = await Promise.all([
+    handles.instagram ? researchInstagram(handles.instagram, opts).catch(() => null) : null,
+    handles.website ? researchWebsite(handles.website).catch(() => null) : null,
+  ]);
+  if (!ig && !web) return { brief: "", products: [] };
 
-  const settled = await Promise.allSettled(jobs);
-  const brief = settled
-    .map((r) => (r.status === "fulfilled" ? r.value : null))
-    .filter((v): v is string => Boolean(v))
-    .join("\n\n")
-    .slice(0, MAX_BRIEF);
-  return brief;
+  const extracted = await extractProducts(ig, web, opts);
+  const seen = new Set<string>();
+  const items = (extracted?.products ?? [])
+    .map((p) => ({ name: (p?.name ?? "").trim(), detail: (p?.detail ?? "").trim() }))
+    .filter((p) => p.name && !seen.has(p.name.toLowerCase()) && seen.add(p.name.toLowerCase()))
+    .slice(0, MAX_PRODUCTS);
+  const products = items.map((p) => (p.detail ? `${p.name} (${truncate(p.detail, 80)})` : p.name));
+
+  const sections: string[] = [];
+  if (ig) sections.push(ig);
+  if (web) {
+    const summary = extracted?.websiteSummary?.trim();
+    sections.push(
+      `WEBSITE (${normalizeWebsite(handles.website)})\n${summary || truncate(web.replace(/\s+/g, " "), 1200)}`,
+    );
+  }
+  if (products.length) {
+    sections.push(
+      `PRODUCTS & SERVICES FOUND ON THEIR INSTAGRAM/WEBSITE\n${products.map((p) => `• ${p}`).join("\n")}`,
+    );
+  }
+  console.log(
+    `[Research] ig=${Boolean(ig)} web=${Boolean(web)} products=${products.length}`,
+  );
+  // Keep the products and website sections even when the Instagram part is long.
+  const tail = sections.slice(ig ? 1 : 0).join("\n\n");
+  const head = ig ? truncate(ig, Math.max(1500, MAX_BRIEF - tail.length - 2)) : "";
+  return { brief: [head, tail].filter(Boolean).join("\n\n"), products };
 }

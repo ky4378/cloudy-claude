@@ -42,6 +42,8 @@ export interface BusinessProfile {
   accentColor?: string;
   /** Brand brief gathered from the owner's live social profiles. */
   brandResearch?: string;
+  /** Products/services found on their Instagram and website (also merged into `products`). */
+  discoveredProducts?: string[];
   /** Where the account sits today — drives how the plan is shaped. */
   igFollowers?: string; // under500 | 500to2k | 2kto10k | 10kplus
   postingFrequency?: string; // daily | 3to4x | 1to2x | rarely

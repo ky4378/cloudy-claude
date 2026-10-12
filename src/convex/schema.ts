@@ -140,6 +140,9 @@ const schema = defineSchema(
       trendReport: v.optional(trendReportValidator),
       recommendations: v.optional(recommendationsValidator),
       brandResearch: v.optional(v.string()), // brand brief gathered from live social profiles
+      brandResearchAt: v.optional(v.number()), // when brandResearch was gathered (reused for 7 days)
+      brandResearchHandle: v.optional(v.string()), // IG handle + website the research was gathered for
+      discoveredProducts: v.optional(v.array(v.string())), // products/services found on their Instagram + website
       // Meta Instagram Graph API connection (free, official). Token is only
       // ever read server-side — never returned to the client.
       igToken: v.optional(v.string()),

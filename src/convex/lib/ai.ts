@@ -25,9 +25,14 @@ const BASE_URL = (process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1").re
 
 export const AI_CONFIGURED = Boolean(API_KEY);
 
+/** One part of a multimodal message (text or an image for vision models). */
+export type ChatContentPart =
+  | { type: "text"; text: string }
+  | { type: "image_url"; image_url: { url: string; detail?: "low" | "high" | "auto" } };
+
 export interface ChatMessage {
   role: "system" | "user" | "assistant";
-  content: string;
+  content: string | ChatContentPart[];
 }
 
 export interface ChatOptions {
@@ -165,7 +170,16 @@ export function businessContext(p: BusinessProfile): string {
 
   // CRITICAL: Products/services come EARLY and are emphasized strongly
   if (p.products.length) {
-    lines.push(`\n⭐ ACTUAL PRODUCTS/SERVICES (Priority #1 — all content must feature these):\n${p.products.map(p => `  • ${p}`).join("\n")}`);
+    const found = new Set((p.discoveredProducts ?? []).map((x) => x.toLowerCase()));
+    const owner = p.products.filter((x) => !found.has(x.toLowerCase()));
+    const online = p.products.filter((x) => found.has(x.toLowerCase()));
+    lines.push(`\n⭐ ACTUAL PRODUCTS/SERVICES (Priority #1 — all content must feature these):`);
+    if (owner.length) lines.push(`From the owner:\n${owner.map((x) => `  • ${x}`).join("\n")}`);
+    if (online.length) {
+      lines.push(`Found on their Instagram/website:\n${online.map((x) => `  • ${x}`).join("\n")}`);
+    }
+  } else {
+    lines.push(`\nProducts/services: not provided and none found online — use only what the brand research shows; never invent specific product names.`);
   }
 
   if (p.differentiator) lines.push(`What makes them different: ${p.differentiator}`);
@@ -191,6 +205,7 @@ Hard rules:
 - Never produce generic advice that would apply to any business. Use the business's real products, location, audience, tone, differentiator and challenges.
 - Respect the preferred brand tone in every sentence you write for them.
 - Respect the "content they do NOT want" list absolutely.
+- When brand research includes a BRAND AESTHETIC & PERSONALITY block, keep every idea inside that visual identity and personality.
 - Keep language plain and friendly; no jargon, no buzzwords.
 - **CRITICAL: Validate all generated content against the business's actual products/services. Do NOT generate generic industry content that ignores the business focus. Example: an acai bowl cafe should NEVER get coffee content even if marked as a cafe type. Always prioritize actual business offerings over industry category.**`;
 
