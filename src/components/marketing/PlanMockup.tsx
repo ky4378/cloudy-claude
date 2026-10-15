@@ -13,7 +13,6 @@ import {
   Target,
   TrendingUp,
 } from "lucide-react";
-import { useMemo, useState } from "react";
 
 type MockStatus = "Posted" | "Ready" | "Draft";
 
@@ -226,9 +225,9 @@ const FLOATING = [
   { label: "Trend found", icon: TrendingUp, className: "-right-2 bottom-10 md:-right-10" },
 ];
 
-/** Compact hero preview: week strip + selected day. */
+/** Compact hero preview: week strip + one fixed day (display only, not clickable). */
 export function HeroMockup() {
-  const [selected, setSelected] = useState(0);
+  const selected = 0;
   const week = MOCK_DAYS.slice(0, 7);
   const day = week[selected];
   return (
@@ -260,15 +259,13 @@ export function HeroMockup() {
                 const Icon = TYPE_ICON[d.contentType];
                 const active = i === selected;
                 return (
-                  <button
+                  <div
                     key={d.date}
-                    type="button"
-                    onClick={() => setSelected(i)}
                     className={cn(
-                      "flex flex-col items-center gap-1 rounded-xl border px-1 py-2 text-[10px] transition-colors",
+                      "flex flex-col items-center gap-1 rounded-xl border px-1 py-2 text-[10px]",
                       active
                         ? "border-ink bg-primary text-primary-foreground"
-                        : "border-hairline bg-white text-secondary-text hover:border-forest-300",
+                        : "border-hairline bg-white text-secondary-text",
                     )}
                   >
                     <span className="font-semibold uppercase">{weekday(d.date)}</span>
@@ -277,7 +274,7 @@ export function HeroMockup() {
                     </span>
                     <Icon className="size-3.5" />
                     <span className={cn("size-1.5 rounded-full", active ? "bg-white" : DOT_CLASS[d.status])} />
-                  </button>
+                  </div>
                 );
               })}
             </div>
@@ -285,13 +282,11 @@ export function HeroMockup() {
               {week.slice(0, 4).map((d, i) => {
                 const Icon = TYPE_ICON[d.contentType];
                 return (
-                  <button
+                  <div
                     key={d.date}
-                    type="button"
-                    onClick={() => setSelected(i)}
                     className={cn(
-                      "flex w-full items-center gap-3 rounded-xl border px-3 py-2 text-left transition-colors",
-                      i === selected ? "border-forest-300 bg-sage/60" : "border-hairline bg-white hover:bg-paper",
+                      "flex w-full items-center gap-3 rounded-xl border px-3 py-2 text-left",
+                      i === selected ? "border-forest-300 bg-sage/60" : "border-hairline bg-white",
                     )}
                   >
                     <Icon className="size-4 shrink-0 text-forest-600" />
@@ -302,7 +297,7 @@ export function HeroMockup() {
                       </p>
                     </div>
                     <StatusPill status={d.status} />
-                  </button>
+                  </div>
                 );
               })}
             </div>
@@ -317,13 +312,12 @@ export function HeroMockup() {
   );
 }
 
-/** Full product preview: sidebar + 30-day calendar + detail panel. */
+/** Full product preview: sidebar + 30-day calendar + one fixed day (display only, not clickable). */
 export function ProductMockup() {
-  const monday = useMemo(
-    () => Math.max(0, MOCK_DAYS.findIndex((d) => new Date(`${d.date}T00:00:00`).getDay() === 1)),
-    [],
+  const selected = Math.max(
+    0,
+    MOCK_DAYS.findIndex((d) => new Date(`${d.date}T00:00:00`).getDay() === 1),
   );
-  const [selected, setSelected] = useState(monday);
   const day = MOCK_DAYS[selected];
   const leading = new Date(`${MOCK_DAYS[0].date}T00:00:00`).getDay();
   const nav = ["Dashboard", "30-Day Plan", "Content", "Insights", "Competitors", "Settings"];
@@ -384,22 +378,19 @@ export function ProductMockup() {
               const Icon = TYPE_ICON[d.contentType];
               const active = i === selected;
               return (
-                <button
+                <div
                   key={d.date}
-                  type="button"
-                  onClick={() => setSelected(i)}
-                  aria-label={`Day ${i + 1}: ${d.title}`}
                   className={cn(
-                    "flex aspect-square flex-col items-center justify-center gap-0.5 rounded-lg border text-[10px] transition-colors",
+                    "flex aspect-square flex-col items-center justify-center gap-0.5 rounded-lg border text-[10px]",
                     active
                       ? "border-ink bg-primary text-primary-foreground"
-                      : "border-hairline bg-white text-ink hover:border-forest-300",
+                      : "border-hairline bg-white text-ink",
                   )}
                 >
                   <span className="font-medium">{dayNum(d.date)}</span>
                   <Icon className="size-3" />
                   <span className={cn("size-1 rounded-full", active ? "bg-white" : DOT_CLASS[d.status])} />
-                </button>
+                </div>
               );
             })}
           </div>
