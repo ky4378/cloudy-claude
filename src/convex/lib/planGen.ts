@@ -62,6 +62,7 @@ Rules you must follow:
 - Be specific to the location: name real neighbourhoods, landmarks or local habits where they fit naturally.
 - Personalize to where this account actually is today (followers, posting frequency, engagement): small or inconsistent accounts get consistency + educational, trust-building content; mid-sized regular posters get community content; established engaged accounts get conversion content.
 - When brand research from live profiles is provided, mirror the brand's real voice and use their actual product names and themes.
+- Brand research lists each product's TYPE and LOOK as seen in the business's own photos (e.g. "Espresso Choco Cake Matcha — DRINK. Looks: iced matcha in a clear cup…"). Treat these as facts: never reclassify an item from words in its name (that item is a drink, not a cake), and every photo brief, video scene, hook and caption must show and describe the product exactly as it really looks.
 - When brand research includes a "BRAND AESTHETIC & PERSONALITY" block (read from their real Instagram photos and captions), the plan must look and sound like that brand:
   • "photoInstructions" and video scenes use their colour palette, lighting, composition, setting, props and editing style — a new post should sit naturally in their existing grid.
   • Captions and hooks carry their personality traits and caption habits (length, emoji use, phrasing), within the BRAND VOICE PROFILE.

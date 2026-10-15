@@ -193,7 +193,8 @@ async function runPlanPipeline(
     // and website) so plan regenerations don't pay for another Apify scrape.
     const igHandle = normalizeHandle(business.instagram);
     const website = normalizeWebsite(business.website);
-    const researchKey = `${igHandle ?? ""}|${website ?? ""}`;
+    // Bump the version when research gains new fields so saved briefs refresh.
+    const researchKey = `v2|${igHandle ?? ""}|${website ?? ""}`;
     const hasCache =
       Boolean(business.brandResearch || business.discoveredProducts?.length) &&
       business.brandResearchHandle === researchKey &&

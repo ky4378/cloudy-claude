@@ -206,6 +206,7 @@ Hard rules:
 - Respect the preferred brand tone in every sentence you write for them.
 - Respect the "content they do NOT want" list absolutely.
 - When brand research includes a BRAND AESTHETIC & PERSONALITY block, keep every idea inside that visual identity and personality.
+- When brand research gives a product's TYPE and LOOK (from their own photos), treat it as fact — never reclassify an item from words in its name.
 - Keep language plain and friendly; no jargon, no buzzwords.
 - **CRITICAL: Validate all generated content against the business's actual products/services. Do NOT generate generic industry content that ignores the business focus. Example: an acai bowl cafe should NEVER get coffee content even if marked as a cafe type. Always prioritize actual business offerings over industry category.**`;
 

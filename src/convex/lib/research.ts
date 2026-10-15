@@ -42,7 +42,7 @@ const WEBSITE_TIMEOUT_MS = 20000;
 const MAX_WEBSITE_TEXT = 12000;
 const MAX_PRODUCTS = 25;
 // Aesthetic analysis: how many recent post images the vision model looks at.
-const AESTHETIC_IMAGES = 6;
+const AESTHETIC_IMAGES = 12;
 const IMAGE_TIMEOUT_MS = 8000;
 const MAX_IMAGE_BYTES = 2_000_000;
 const TIMEOUT_MS = 7000;
@@ -445,15 +445,17 @@ interface AestheticResult {
   captionVoice?: string;
   whatWorks?: string[];
   offBrand?: string[];
-  productsSeen?: string[];
+  postProducts?: { post?: number; name?: string; type?: string; looks?: string }[];
 }
 
 const AESTHETIC_SYSTEM = `You are a brand designer and social media art director. You are shown a small business's most recent Instagram post images with their captions and engagement. Describe the brand's real visual identity and personality so a content planner can create new posts that sit naturally in this feed.
 
 Be concrete and specific to what you actually see — name colours, light, angles, backgrounds, props, textures, fonts on graphics, people/no people. Never invent things that aren't visible. Keep every field short.
 
+Also identify the product in each post ("postProducts"). Decide WHAT the item is from the IMAGE, never from words in its name: a drink called "Espresso Choco Cake Matcha" served in a cup is a matcha DRINK, not a cake; a cake called "Latte Slice" is a DESSERT, not a drink. Use the caption only for the item's name; if it isn't named, give a specific descriptive name ("iced matcha latte with strawberry cold foam"), never a vague one — BAD: "fall drink", "matcha drink", "matcha drink close-up", "matcha product"; GOOD: "iced matcha latte with banana cream", "matcha powder tin". Never put camera words (close-up, flat lay) in a name. "looks" describes ONLY the product itself: vessel or plate, colours, layers, toppings, garnish, hot/iced, size — not the background, setting or who is holding it. List only things the business sells: skip interiors, people, events, design work and text-only graphics (no product visible = skip). If one photo shows two products (e.g. a drink and a pastry), list them as two separate entries, each with its own type.
+
 Return ONLY valid JSON:
-{"overallLook":"one sentence describing the feed's look and feel","palette":["3-6 dominant colours, plain names"],"lighting":"...","composition":"framing, angles, negative space, close-ups vs wide","editing":"filters, contrast, warmth, grain, text overlays","settingAndProps":"backgrounds, surfaces, props, location cues","recurringSubjects":["what they post most"],"mood":"the emotional feel","personalityTraits":["3-5 adjectives for the brand personality"],"captionVoice":"how captions read: length, emoji use, humour, formality, recurring phrases","whatWorks":["which subjects/formats get the most likes here"],"offBrand":["things that would clash with this feed"],"productsSeen":["specific products, dishes, drinks or services visible in the photos — as specific as you can tell (e.g. 'iced matcha latte', 'gel manicure'); never guess brand or menu names you can't read"]}`;
+{"overallLook":"one sentence describing the feed's look and feel","palette":["3-6 dominant colours, plain names"],"lighting":"...","composition":"framing, angles, negative space, close-ups vs wide","editing":"filters, contrast, warmth, grain, text overlays","settingAndProps":"backgrounds, surfaces, props, location cues","recurringSubjects":["what they post most"],"mood":"the emotional feel","personalityTraits":["3-5 adjectives for the brand personality"],"captionVoice":"how captions read: length, emoji use, humour, formality, recurring phrases","whatWorks":["which subjects/formats get the most likes here"],"offBrand":["things that would clash with this feed"],"postProducts":[{"post":1,"name":"the product's name from its caption, or a plain description if unnamed","type":"drink | food | dessert | baked good | retail product | service | other","looks":"what it physically looks like in the photo"}]}`;
 
 /** Download one image and return it as a data URL, or null on any failure. */
 async function imageDataUrl(url: string): Promise<string | null> {
@@ -516,7 +518,7 @@ async function analyzeBrandAesthetic(
       { role: "system", content: AESTHETIC_SYSTEM },
       { role: "user", content: parts },
     ],
-    { maxTokens: 900, temperature: 0.3, timeoutMs: 60_000 },
+    { maxTokens: 2000, temperature: 0.3, timeoutMs: 90_000 },
   );
   const a = raw ? parseAiJson<AestheticResult>(raw) : null;
   if (!a || typeof a !== "object") {
@@ -540,12 +542,25 @@ async function analyzeBrandAesthetic(
     ["Caption voice", text(a.captionVoice)],
     ["What performs best", list(a.whatWorks)],
     ["Off-brand (avoid)", list(a.offBrand)],
-    ["Products seen in photos", list(a.productsSeen)],
   ];
   const body = rows.filter(([, v]) => v).map(([k, v]) => `${k}: ${truncate(v, 260)}`);
   if (body.length < 3) return null;
-  console.log(`[IG research] @${handle}: aesthetic analysed from ${imageCount} images`);
-  return [`BRAND AESTHETIC & PERSONALITY (from their last ${imageCount} Instagram posts)`, ...body].join("\n");
+
+  const seen = (Array.isArray(a.postProducts) ? a.postProducts : [])
+    .map((p) => ({ name: text(p?.name), type: text(p?.type), looks: text(p?.looks) }))
+    .filter((p) => p.name && p.type);
+  console.log(
+    `[IG research] @${handle}: aesthetic analysed from ${imageCount} images, ${seen.length} products identified`,
+  );
+  const out = [`BRAND AESTHETIC & PERSONALITY (from their last ${imageCount} Instagram posts)`, ...body];
+  if (seen.length) {
+    out.push(
+      "",
+      "PRODUCTS AS SEEN IN THEIR PHOTOS (what each item really is and how it looks)",
+      ...seen.map((p) => `• ${p.name} — ${p.type.toUpperCase()}${p.looks ? `. Looks: ${truncate(p.looks, 200)}` : ""}`),
+    );
+  }
+  return out.join("\n");
 }
 
 // ---------------------------------------------------------------------------
@@ -823,7 +838,7 @@ async function researchWebsite(rawUrl: string): Promise<string | null> {
 // ---------------------------------------------------------------------------
 
 interface ProductExtraction {
-  products?: { name?: string; detail?: string }[];
+  products?: { name?: string; type?: string; looks?: string; detail?: string }[];
   websiteSummary?: string;
 }
 
@@ -833,10 +848,17 @@ Rules:
 - Only list items clearly shown in the material (menu, product pages, captions, photos). Never invent items, prices or names.
 - Be specific ("Iced Ube Latte", "Balayage", "Sourdough Croissant"), not generic categories ("drinks", "hair services") — unless only the category is known.
 - Prefer signature items, best-sellers and items that appear repeatedly. Max ${MAX_PRODUCTS}.
+- Merge entries that are clearly the same item seen in several posts into one, keeping the most specific name. Rename vague or camera-word names ("matcha drink close-up") to a specific descriptive name built from the look. Never list interiors, people, events, design work, or items whose only evidence is a text graphic.
+- Never combine two items into one entry ("matcha drink and pastry") — split them.
+- "type" is what the item really is: drink | food | dessert | baked good | retail product | service | other.
+  • If the item appears in "PRODUCTS AS SEEN IN THEIR PHOTOS", copy its type and look from there — that is what the photo shows, and it overrides any words in the name.
+  • Otherwise use the menu section or description it sits under (an item under "Drinks" is a drink).
+  • Never decide the type from words inside the name alone: "Espresso Choco Cake Matcha" can be a drink. If nothing tells you, use "unknown".
+- "looks" is what it physically looks like (vessel/plate, colours, layers, toppings, garnish, hot/iced) — from the photos, or from the website's description; "" if unknown.
 - "detail" is optional and short: price, size, key ingredient or what makes it special — only if stated.
 - "websiteSummary": 2-4 sentences on what the website says about the business (offer, story, location, ordering/booking), or "" if no website text was given.
 
-Return ONLY valid JSON: {"products":[{"name":"...","detail":"..."}],"websiteSummary":"..."}`;
+Return ONLY valid JSON: {"products":[{"name":"...","type":"...","looks":"...","detail":"..."}],"websiteSummary":"..."}`;
 
 async function extractProducts(
   igBrief: string | null,
@@ -880,30 +902,45 @@ export async function researchProfiles(
 
   const extracted = await extractProducts(ig, web, opts);
   const seen = new Set<string>();
+  const clean = (x: unknown) => (typeof x === "string" ? x.trim() : "");
+  // Models sometimes name an item after the shot ("matcha drink close-up").
+  const cleanName = (x: unknown) =>
+    clean(x).replace(/[\s,–—-]*\b(close-?up|flat ?lay)s?\s*$/i, "").trim();
   const items = (extracted?.products ?? [])
-    .map((p) => ({ name: (p?.name ?? "").trim(), detail: (p?.detail ?? "").trim() }))
+    .map((p) => ({ name: cleanName(p?.name), type: clean(p?.type), looks: clean(p?.looks), detail: clean(p?.detail) }))
     .filter((p) => p.name && !seen.has(p.name.toLowerCase()) && seen.add(p.name.toLowerCase()))
     .slice(0, MAX_PRODUCTS);
-  const products = items.map((p) => (p.detail ? `${p.name} (${truncate(p.detail, 80)})` : p.name));
+  // Plain names go into the product list; type + look live in the brief.
+  const products = items.map((p) => p.name);
+  const describe = (p: (typeof items)[number]) =>
+    [
+      `• ${p.name}`,
+      p.type && p.type.toLowerCase() !== "unknown" ? ` — ${p.type.toUpperCase()}` : "",
+      p.looks ? `. Looks: ${truncate(p.looks, 160)}` : "",
+      p.detail ? `. ${truncate(p.detail, 80)}` : "",
+    ].join("");
 
   const sections: string[] = [];
-  if (ig) sections.push(ig);
+  // The per-photo product list fed the extractor; the merged list below replaces it.
+  const igBrief =
+    ig && items.length ? ig.replace(/\n\nPRODUCTS AS SEEN IN THEIR PHOTOS[\s\S]*$/, "") : ig;
+  if (igBrief) sections.push(igBrief);
   if (web) {
     const summary = extracted?.websiteSummary?.trim();
     sections.push(
       `WEBSITE (${normalizeWebsite(handles.website)})\n${summary || truncate(web.replace(/\s+/g, " "), 1200)}`,
     );
   }
-  if (products.length) {
+  if (items.length) {
     sections.push(
-      `PRODUCTS & SERVICES FOUND ON THEIR INSTAGRAM/WEBSITE\n${products.map((p) => `• ${p}`).join("\n")}`,
+      `PRODUCTS & SERVICES FOUND ON THEIR INSTAGRAM/WEBSITE (type and look are facts — follow them exactly)\n${items.map(describe).join("\n")}`,
     );
   }
   console.log(
     `[Research] ig=${Boolean(ig)} web=${Boolean(web)} products=${products.length}`,
   );
   // Keep the products and website sections even when the Instagram part is long.
-  const tail = sections.slice(ig ? 1 : 0).join("\n\n");
-  const head = ig ? truncate(ig, Math.max(1500, MAX_BRIEF - tail.length - 2)) : "";
+  const tail = sections.slice(igBrief ? 1 : 0).join("\n\n");
+  const head = igBrief ? truncate(igBrief, Math.max(1500, MAX_BRIEF - tail.length - 2)) : "";
   return { brief: [head, tail].filter(Boolean).join("\n\n"), products };
 }
