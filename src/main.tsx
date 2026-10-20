@@ -58,6 +58,15 @@ function RouteSyncer() {
       { type: "iframe-route-change", path: location.pathname },
       "*",
     );
+
+    // One canonical URL per page, always on the www host the site redirects to.
+    let canonical = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+    if (!canonical) {
+      canonical = document.createElement("link");
+      canonical.rel = "canonical";
+      document.head.appendChild(canonical);
+    }
+    canonical.href = `https://www.cloudyco.cloud${location.pathname}`;
   }, [location.pathname]);
 
   useEffect(() => {

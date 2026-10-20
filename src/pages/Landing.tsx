@@ -404,7 +404,7 @@ export default function Landing() {
   const { isAuthenticated } = useAuth();
   const location = useLocation();
   usePageMeta(
-    "Marketing Plans for Local Businesses | Cloudy",
+    "Cloudy (Cloudyco) – AI Marketing Plans for Local Businesses",
     "Generate 30-day marketing plans with AI. Know what to post, captions, hashtags, Reel ideas & scripts. Perfect for cafes, salons, fitness studios & more.",
   );
 

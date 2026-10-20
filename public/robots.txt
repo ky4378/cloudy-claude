@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /onboarding
+Disallow: /ig/callback
+
+Sitemap: https://www.cloudyco.cloud/sitemap.xml

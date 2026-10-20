@@ -10,12 +10,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#214D3C" />
 
-  <title>Cloudy — Your entire month of marketing, planned by AI</title>
+  <title>Cloudy (Cloudyco) – AI Marketing Plans for Local Businesses</title>
   <meta
     name="description"
     content="Cloudy creates a complete 30-day marketing plan for your local business — what to post, what to film, captions, hashtags, Reel ideas, scripts and posting times. You just create and post."
   />
-  <link rel="canonical" href="https://cloudyco.cloud/" />
   <meta name="robots" content="index, follow" />
 
   <!-- Open Graph -->
@@ -26,8 +25,8 @@
     property="og:description"
     content="Stop wondering what to post. Cloudy plans your next 30 days of marketing — personalized to your business, audience, goals and tone."
   />
-  <meta property="og:url" content="https://cloudyco.cloud/" />
-  <meta property="og:image" content="https://cloudyco.cloud/logo.svg" />
+  <meta property="og:url" content="https://www.cloudyco.cloud/" />
+  <meta property="og:image" content="https://www.cloudyco.cloud/favicon-192.png" />
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary" />
@@ -51,15 +50,32 @@
     "@graph": [
       {
         "@type": "Organization",
+        "@id": "https://www.cloudyco.cloud/#organization",
         "name": "Cloudy",
-        "url": "https://cloudyco.cloud/",
-        "logo": "https://cloudyco.cloud/logo.svg"
+        "alternateName": ["Cloudyco", "Cloudy Co", "Cloudy AI", "Cloudy Marketing", "cloudyco.cloud"],
+        "url": "https://www.cloudyco.cloud/",
+        "logo": "https://www.cloudyco.cloud/favicon-192.png",
+        "description": "Cloudy is an AI marketing planner that creates 30-day marketing plans for local businesses."
       },
       {
         "@type": "WebSite",
+        "@id": "https://www.cloudyco.cloud/#website",
         "name": "Cloudy",
-        "url": "https://cloudyco.cloud/",
-        "description": "AI-powered marketing plans for local businesses."
+        "alternateName": ["Cloudyco", "Cloudy Co", "Cloudy AI", "Cloudy Marketing", "cloudyco.cloud"],
+        "url": "https://www.cloudyco.cloud/",
+        "description": "AI-powered marketing plans for local businesses.",
+        "publisher": { "@id": "https://www.cloudyco.cloud/#organization" }
+      },
+      {
+        "@type": "SoftwareApplication",
+        "name": "Cloudy",
+        "alternateName": "Cloudy Marketing",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web",
+        "url": "https://www.cloudyco.cloud/",
+        "description": "AI marketing planner for local businesses: 30-day content plans with post ideas, captions, hashtags, Reel scripts and posting times.",
+        "offers": { "@type": "Offer", "price": "19", "priceCurrency": "USD" },
+        "publisher": { "@id": "https://www.cloudyco.cloud/#organization" }
       }
     ]
   }
